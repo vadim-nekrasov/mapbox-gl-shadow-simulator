@@ -15,6 +15,16 @@ import type { LngLatLike, Map as MapboxMap, MapboxGeoJSONFeature } from 'mapbox-
 // ============================================
 // ASYNC/AWAIT HELPER (TypeScript __awaiter polyfill)
 // ============================================
+// Note: These are low-level utility functions with minified names from the original source.
+// They are kept as-is to maintain stability and avoid potential bugs from renaming.
+
+/**
+ * __awaiter helper - TypeScript's async/await polyfill for older JS targets
+ * @param thisArg - The 'this' context
+ * @param _arguments - Arguments to pass to the generator
+ * @param P - Promise constructor
+ * @param generator - The generator function
+ */
 function t(t, e, r, o) {
   return new (r || (r = Promise))(function (i, n) {
     function a(t) {
@@ -45,12 +55,23 @@ function t(t, e, r, o) {
     u((o = o.apply(t, e || [])).next());
   });
 }
+
+/**
+ * Wraps a value within a range [min, max]
+ * Used for wrapping longitude/latitude values
+ */
 function e(t, e, r) {
   var o = e[1],
     i = e[0],
     n = o - i;
   return t === o && r ? t : ((((t - i) % n) + n) % n) + i;
 }
+
+/**
+ * Formats a number to a specific precision
+ * @param value - Number to format
+ * @param precision - Number of decimal places (default: 6)
+ */
 function r(t, e) {
   if (!1 === e) return t;
   var r = Math.pow(10, void 0 === e ? 6 : e);
@@ -60,14 +81,26 @@ function r(t, e) {
 // ============================================
 // GEOMETRY UTILITIES (Point, Bounds, LatLng)
 // ============================================
+/**
+ * Array.isArray polyfill for older browsers
+ */
 var o =
   Array.isArray ||
   function (t) {
     return "[object Array]" === Object.prototype.toString.call(t);
   };
+
+/**
+ * Point constructor - represents a 2D point with x,y coordinates
+ * Used throughout for pixel coordinates and geometric calculations
+ */
 function i(t, e, r) {
   ((this.x = r ? Math.round(t) : t), (this.y = r ? Math.round(e) : e));
 }
+
+/**
+ * Math.trunc polyfill for older browsers
+ */
 var n =
   Math.trunc ||
   function (t) {

@@ -2,16 +2,27 @@
  * Mapbox GL Shadow Simulator - Deobfuscated Source
  * Original Package: mapbox-gl-shadow-simulator v0.63.0
  * Copyright Ted Piotrowski 2025
- *
+ * 
  * This is a deobfuscated version for development and modification purposes.
  * Original minified code has been reformatted and partially renamed for readability.
- *
+ * 
  * For licensing visit: https://shademap.app/about/
  */
+
 
 // ============================================
 // ASYNC/AWAIT HELPER (TypeScript __awaiter polyfill)
 // ============================================
+// Note: These are low-level utility functions with minified names from the original source.
+// They are kept as-is to maintain stability and avoid potential bugs from renaming.
+
+/**
+ * __awaiter helper - TypeScript's async/await polyfill for older JS targets
+ * @param thisArg - The 'this' context
+ * @param _arguments - Arguments to pass to the generator
+ * @param P - Promise constructor
+ * @param generator - The generator function
+ */
 function t(t, e, r, o) {
   return new (r || (r = Promise))(function (i, n) {
     function a(t) {
@@ -42,12 +53,23 @@ function t(t, e, r, o) {
     u((o = o.apply(t, [])).next());
   });
 }
+
+/**
+ * Wraps a value within a range [min, max]
+ * Used for wrapping longitude/latitude values
+ */
 function e(t, e, r) {
   var o = e[1],
     i = e[0],
     n = o - i;
   return t === o && r ? t : ((((t - i) % n) + n) % n) + i;
 }
+
+/**
+ * Formats a number to a specific precision
+ * @param value - Number to format
+ * @param precision - Number of decimal places (default: 6)
+ */
 function r(t, e) {
   if (false === e) return t;
   var r = Math.pow(10, void 0 === e ? 6 : e);
@@ -57,14 +79,26 @@ function r(t, e) {
 // ============================================
 // GEOMETRY UTILITIES (Point, Bounds, LatLng)
 // ============================================
+/**
+ * Array.isArray polyfill for older browsers
+ */
 var o =
   Array.isArray ||
   function (t) {
     return "[object Array]" === Object.prototype.toString.call(t);
   };
+
+/**
+ * Point constructor - represents a 2D point with x,y coordinates
+ * Used throughout for pixel coordinates and geometric calculations
+ */
 function i(t, e, r) {
   ((this.x = r ? Math.round(t) : t), (this.y = r ? Math.round(e) : e));
 }
+
+/**
+ * Math.trunc polyfill for older browsers
+ */
 var n =
   Math.trunc ||
   function (t) {
@@ -412,11 +446,7 @@ var c = (function (t) {
     infinite: false,
     wrapLatLng: function (t) {
       var r = this.wrapLng ? e(t.lng, this.wrapLng, true) : t.lng;
-      return new f(
-        this.wrapLat ? e(t.lat, this.wrapLat, true) : t.lat,
-        r,
-        t.alt,
-      );
+      return new f(this.wrapLat ? e(t.lat, this.wrapLat, true) : t.lat, r, t.alt);
     },
     wrapLatLngBounds: function (t) {
       var e = t.getCenter(),
@@ -660,13 +690,8 @@ function A(t, e, r) {
           a,
           s = [];
         for (i = 0, n = e.length; i < n; i++)
-          ((a = b(
-            t,
-            e[i] * o,
-            i < n - 1 ? e[i + 1] * o : t.length,
-            o,
-            false,
-          )) === a.next && (a.steiner = true),
+          ((a = b(t, e[i] * o, i < n - 1 ? e[i + 1] * o : t.length, o, false)) ===
+            a.next && (a.steiner = true),
             s.push(I(a)));
         for (s.sort(D), i = 0; i < s.length; i++) r = S(s[i], r);
         return r;
@@ -696,9 +721,7 @@ function R(t, e) {
   var r,
     o = t;
   do {
-    if (
-      ((r = false), o.steiner || (!z(o, o.next) && 0 !== O(o.prev, o, o.next)))
-    )
+    if (((r = false), o.steiner || (!z(o, o.next) && 0 !== O(o.prev, o, o.next))))
       o = o.next;
     else {
       if ((Z(o), (o = e = o.prev) === o.next)) break;
@@ -2336,14 +2359,7 @@ class BuildingRasterizer {
           new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]),
           c.STATIC_DRAW,
         ),
-        c.vertexAttribPointer(
-          this.dsmAttributeLocation,
-          2,
-          c.FLOAT,
-          false,
-          0,
-          0,
-        ),
+        c.vertexAttribPointer(this.dsmAttributeLocation, 2, c.FLOAT, false, 0, 0),
         c.uniform4f(this.colorUniformLocation, 1, 1, 1, 1),
         c.uniform1i(this.useDSMUniformLocation, 1),
         c.colorMask(false, false, true, true),
@@ -2936,11 +2952,7 @@ class MapboxShadeMap extends ShadeMapBase {
               yield new Promise((t, e) => {
                 window.requestAnimationFrame(() => {
                   if ((i.useProgram(n), c !== j))
-                    return (
-                      i.deleteTexture(p),
-                      i.uniform4fv(w, d),
-                      void t(true)
-                    );
+                    return (i.deleteTexture(p), i.uniform4fv(w, d), void t(true));
                   (i.activeTexture(i.TEXTURE2),
                     i.bindTexture(i.TEXTURE_2D, p),
                     i.uniform1i(U, 2),
