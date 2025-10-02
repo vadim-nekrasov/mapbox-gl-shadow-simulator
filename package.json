@@ -1,13 +1,18 @@
 {
   "name": "mapbox-gl-shadow-simulator",
   "version": "0.63.0",
+  "type": "module",
   "description": "Display terrain and structure shadows cast by the sun in a custom style layer",
   "main": "dist/mapbox-gl-shadow-simulator.umd.min.js",
   "browser": "dist/mapbox-gl-shadow-simulator.umd.min.js",
   "module": "dist/mapbox-gl-shadow-simulator.esm.js",
   "types": "dist/mapbox-gl-shadow-simulator.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
+    "build:prod": "NODE_ENV=production rollup -c",
+    "watch": "rollup -c -w",
+    "deobfuscate": "node deobfuscate-conservative.js"
   },
   "repository": {
     "type": "git",
@@ -31,6 +36,21 @@
     "suncalc": "^1.9.0"
   },
   "devDependencies": {
-    "@types/mapbox-gl": "^2.7.8"
+    "@babel/generator": "^7.28.3",
+    "@babel/parser": "^7.28.4",
+    "@babel/traverse": "^7.28.4",
+    "@babel/types": "^7.28.4",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@rollup/pluginutils": "^5.3.0",
+    "@types/mapbox-gl": "^2.7.8",
+    "@types/node": "^24.6.2",
+    "prettier": "^3.6.2",
+    "rollup": "^4.52.3",
+    "terser": "^5.44.0",
+    "tslib": "^2.8.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
   }
 }

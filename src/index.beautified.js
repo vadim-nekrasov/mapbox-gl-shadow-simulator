@@ -1,17 +1,3 @@
-/**
- * Mapbox GL Shadow Simulator - Deobfuscated Source
- * Original Package: mapbox-gl-shadow-simulator v0.63.0
- * Copyright Ted Piotrowski 2025
- *
- * This is a deobfuscated version for development and modification purposes.
- * Original minified code has been reformatted and partially renamed for readability.
- *
- * For licensing visit: https://shademap.app/about/
- */
-
-// ============================================
-// ASYNC/AWAIT HELPER (TypeScript __awaiter polyfill)
-// ============================================
 function t(t, e, r, o) {
   return new (r || (r = Promise))(function (i, n) {
     function a(t) {
@@ -39,7 +25,7 @@ function t(t, e, r, o) {
                 t(e);
               })).then(a, s);
     }
-    u((o = o.apply(t, [])).next());
+    u((o = o.apply(t, e || [])).next());
   });
 }
 function e(t, e, r) {
@@ -49,14 +35,10 @@ function e(t, e, r) {
   return t === o && r ? t : ((((t - i) % n) + n) % n) + i;
 }
 function r(t, e) {
-  if (false === e) return t;
+  if (!1 === e) return t;
   var r = Math.pow(10, void 0 === e ? 6 : e);
   return Math.round(t * r) / r;
 }
-
-// ============================================
-// GEOMETRY UTILITIES (Point, Bounds, LatLng)
-// ============================================
 var o =
   Array.isArray ||
   function (t) {
@@ -409,14 +391,10 @@ var c = (function (t) {
         this.transformation.transform(e.max, r),
       );
     },
-    infinite: false,
+    infinite: !1,
     wrapLatLng: function (t) {
-      var r = this.wrapLng ? e(t.lng, this.wrapLng, true) : t.lng;
-      return new f(
-        this.wrapLat ? e(t.lat, this.wrapLat, true) : t.lat,
-        r,
-        t.alt,
-      );
+      var r = this.wrapLng ? e(t.lng, this.wrapLng, !0) : t.lng;
+      return new f(this.wrapLat ? e(t.lat, this.wrapLat, !0) : t.lat, r, t.alt);
     },
     wrapLatLngBounds: function (t) {
       var e = t.getCenter(),
@@ -493,10 +471,6 @@ f.prototype = {
     return new f(this.lat, this.lng, this.alt);
   },
 };
-
-// ============================================
-// MAP CONSTANTS AND PROJECTIONS
-// ============================================
 const m = 256,
   _ = 0.40909994067971484,
   g = (t) => {
@@ -598,11 +572,7 @@ const T = (t) => {
     },
   };
 };
-
-// ============================================
-// EVENT EMITTER
-// ============================================
-class EventEmitter {
+class y {
   constructor() {
     this.events = {};
   }
@@ -634,10 +604,6 @@ class EventEmitter {
     return r;
   }
 }
-
-// ============================================
-// EARCUT TRIANGULATION ALGORITHM
-// ============================================
 function A(t, e, r) {
   r = r || 2;
   var o,
@@ -649,7 +615,7 @@ function A(t, e, r) {
     l,
     h = e && e.length,
     c = h ? e[0] * r : t.length,
-    f = b(t, 0, c, r, true),
+    f = b(t, 0, c, r, !0),
     d = [];
   if (!f || f.next === f.prev) return d;
   if (
@@ -660,13 +626,8 @@ function A(t, e, r) {
           a,
           s = [];
         for (i = 0, n = e.length; i < n; i++)
-          ((a = b(
-            t,
-            e[i] * o,
-            i < n - 1 ? e[i + 1] * o : t.length,
-            o,
-            false,
-          )) === a.next && (a.steiner = true),
+          ((a = b(t, e[i] * o, i < n - 1 ? e[i + 1] * o : t.length, o, !1)) ===
+            a.next && (a.steiner = !0),
             s.push(I(a)));
         for (s.sort(D), i = 0; i < s.length; i++) r = S(s[i], r);
         return r;
@@ -696,13 +657,11 @@ function R(t, e) {
   var r,
     o = t;
   do {
-    if (
-      ((r = false), o.steiner || (!z(o, o.next) && 0 !== O(o.prev, o, o.next)))
-    )
+    if (((r = !1), o.steiner || (!z(o, o.next) && 0 !== O(o.prev, o, o.next))))
       o = o.next;
     else {
       if ((Z(o), (o = e = o.prev) === o.next)) break;
-      r = true;
+      r = !0;
     }
   } while (r || o !== e);
   return e;
@@ -773,7 +732,7 @@ function w(t) {
   var e = t.prev,
     r = t,
     o = t.next;
-  if (O(e, r, o) >= 0) return false;
+  if (O(e, r, o) >= 0) return !1;
   for (
     var i = e.x,
       n = r.x,
@@ -797,16 +756,16 @@ function w(t) {
       B(i, s, n, u, a, l, m.x, m.y) &&
       O(m.prev, m, m.next) >= 0
     )
-      return false;
+      return !1;
     m = m.next;
   }
-  return true;
+  return !0;
 }
 function F(t, e, r, o) {
   var i = t.prev,
     n = t,
     a = t.next;
-  if (O(i, n, a) >= 0) return false;
+  if (O(i, n, a) >= 0) return !1;
   for (
     var s = i.x,
       u = n.x,
@@ -835,7 +794,7 @@ function F(t, e, r, o) {
       B(s, h, u, c, l, f, E.x, E.y) &&
       O(E.prev, E, E.next) >= 0
     )
-      return false;
+      return !1;
     if (
       ((E = E.prevZ),
       v.x >= d &&
@@ -847,7 +806,7 @@ function F(t, e, r, o) {
         B(s, h, u, c, l, f, v.x, v.y) &&
         O(v.prev, v, v.next) >= 0)
     )
-      return false;
+      return !1;
     v = v.nextZ;
   }
   for (; E && E.z >= p; ) {
@@ -861,7 +820,7 @@ function F(t, e, r, o) {
       B(s, h, u, c, l, f, E.x, E.y) &&
       O(E.prev, E, E.next) >= 0
     )
-      return false;
+      return !1;
     E = E.prevZ;
   }
   for (; v && v.z <= x; ) {
@@ -875,10 +834,10 @@ function F(t, e, r, o) {
       B(s, h, u, c, l, f, v.x, v.y) &&
       O(v.prev, v, v.next) >= 0
     )
-      return false;
+      return !1;
     v = v.nextZ;
   }
-  return true;
+  return !0;
 }
 function L(t, e, r) {
   var o = t;
@@ -1018,16 +977,16 @@ function N(t, e) {
           r.next.i !== e.i &&
           X(r, r.next, t, e)
         )
-          return true;
+          return !0;
         r = r.next;
       } while (r !== t);
-      return false;
+      return !1;
     })(t, e) &&
     ((W(t, e) &&
       W(e, t) &&
       (function (t, e) {
         var r = t,
-          o = false,
+          o = !1,
           i = (t.x + e.x) / 2,
           n = (t.y + e.y) / 2;
         do {
@@ -1119,7 +1078,7 @@ function K(t, e, r) {
     (this.z = 0),
     (this.prevZ = null),
     (this.nextZ = null),
-    (this.steiner = false));
+    (this.steiner = !1));
 }
 function k(t, e, r, o) {
   for (var i = 0, n = e, a = r - o; n < r; n += o)
@@ -1164,7 +1123,7 @@ function V(t) {
           if (r) return 3.04 * r;
           return o || e;
         })(r),
-        u = r.highlight || false;
+        u = r.highlight || !1;
       let l = 0,
         h = 0,
         c = 0;
@@ -1252,7 +1211,7 @@ let J,
     maxHeight: 8848,
     raster: [],
     demZoom: 0,
-    dirty: false,
+    dirty: !1,
     outputWidth: 0,
     outputHeight: 0,
   };
@@ -1270,7 +1229,7 @@ const tt = (e) =>
           buildingRasterizer: d,
           tileMerger: _,
           canopyMerger: g,
-          forceUpdate: p = false,
+          forceUpdate: p = !1,
         } = e,
         {
           getSourceUrl: x,
@@ -1537,11 +1496,7 @@ const tt = (e) =>
       console.error("EXCEPTION", t);
     }
   };
-
-// ============================================
-// SHADEMAP BASE CLASS
-// ============================================
-class ShadeMapBase extends EventEmitter {
+class at extends y {
   constructor(...e) {
     (super(),
       (this.options = {
@@ -1549,7 +1504,7 @@ class ShadeMapBase extends EventEmitter {
         color: "000",
         opacity: 0.3,
         sunExposure: {
-          enabled: false,
+          enabled: !1,
           startDate: new Date(),
           endDate: new Date(),
           iterations: 32,
@@ -1577,7 +1532,7 @@ class ShadeMapBase extends EventEmitter {
           height: 0,
           maxHeight: 0,
         },
-        belowCanopy: false,
+        belowCanopy: !1,
         getFeatures: () => Promise.resolve([]),
         getSize: () => ({ width: Number.NaN, height: Number.NaN }),
         debug: (t) => {},
@@ -1684,7 +1639,7 @@ class ShadeMapBase extends EventEmitter {
       this
     );
   }
-  setSunExposure(e = false, r) {
+  setSunExposure(e = !1, r) {
     return t(this, void 0, void 0, function* () {
       if (
         ((this.options.sunExposure = Object.assign(
@@ -1706,7 +1661,7 @@ class ShadeMapBase extends EventEmitter {
         };
       }
       if (this._map && this._compiledKernel && this._heightMap) {
-        if (false === e) rt(this._compiledKernel, { date: this.options.date });
+        if (!1 === e) rt(this._compiledKernel, { date: this.options.date });
         else {
           const {
             startDate: t,
@@ -1720,7 +1675,7 @@ class ShadeMapBase extends EventEmitter {
               "End date must come after the start date to calculate sun exposure",
             );
           if (
-            true ===
+            !0 ===
             (yield ot(this._compiledKernel, {
               startDate: t,
               endDate: e,
@@ -1861,7 +1816,7 @@ class ShadeMapBase extends EventEmitter {
             iterations: r,
           } = this.options.sunExposure;
           if (
-            true ===
+            !0 ===
             (yield ot(this._compiledKernel, {
               startDate: t,
               endDate: e,
@@ -2114,11 +2069,7 @@ function ut(t) {
   const a = e.createProgram();
   return (e.attachShader(a, i), e.attachShader(a, n), e.linkProgram(a), a);
 }
-
-// ============================================
-// BUILDING RASTERIZER (WebGL)
-// ============================================
-class BuildingRasterizer {
+class lt {
   constructor(t) {
     ((this.gl = t),
       (this.program = ut({
@@ -2238,7 +2189,7 @@ class BuildingRasterizer {
         this.positionAttributeLocation,
         2,
         c.FLOAT,
-        false,
+        !1,
         0,
         0,
       ),
@@ -2274,7 +2225,7 @@ class BuildingRasterizer {
               this.positionAttributeLocation,
               2,
               c.FLOAT,
-              false,
+              !1,
               0,
               0,
             ),
@@ -2283,7 +2234,7 @@ class BuildingRasterizer {
               this.dsmAttributeLocation,
               2,
               c.FLOAT,
-              false,
+              !1,
               0,
               0,
             ),
@@ -2325,7 +2276,7 @@ class BuildingRasterizer {
           this.positionAttributeLocation,
           2,
           c.FLOAT,
-          false,
+          !1,
           0,
           0,
         ),
@@ -2336,22 +2287,15 @@ class BuildingRasterizer {
           new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]),
           c.STATIC_DRAW,
         ),
-        c.vertexAttribPointer(
-          this.dsmAttributeLocation,
-          2,
-          c.FLOAT,
-          false,
-          0,
-          0,
-        ),
+        c.vertexAttribPointer(this.dsmAttributeLocation, 2, c.FLOAT, !1, 0, 0),
         c.uniform4f(this.colorUniformLocation, 1, 1, 1, 1),
         c.uniform1i(this.useDSMUniformLocation, 1),
-        c.colorMask(false, false, true, true),
+        c.colorMask(!1, !1, !0, !0),
         c.drawArrays(c.TRIANGLE_STRIP, 0, 4),
         c.deleteTexture(t));
     }
     return (
-      c.colorMask(true, true, true, true),
+      c.colorMask(!0, !0, !0, !0),
       c.activeTexture(c.TEXTURE1),
       c.bindTexture(c.TEXTURE_2D, s),
       c.activeTexture(c.TEXTURE2),
@@ -2386,7 +2330,7 @@ class BuildingRasterizer {
               this.positionAttributeLocation,
               2,
               c.FLOAT,
-              false,
+              !1,
               0,
               0,
             ),
@@ -2395,7 +2339,7 @@ class BuildingRasterizer {
               this.dsmAttributeLocation,
               2,
               c.FLOAT,
-              false,
+              !1,
               0,
               0,
             ),
@@ -2425,11 +2369,7 @@ const ht = (t) => {
     z: o === m ? a : a - 1,
   };
 };
-
-// ============================================
-// TILE MERGER (DEM Tiles)
-// ============================================
-class TileMerger {
+class ct {
   constructor(t) {
     ((this.gl = t),
       (this.program = ut({
@@ -2466,7 +2406,7 @@ class TileMerger {
         this.texPositionAttributeLocation,
         2,
         t.FLOAT,
-        false,
+        !1,
         0,
         0,
       ),
@@ -2581,7 +2521,7 @@ class TileMerger {
                       this.tilePositionAttributeLocation,
                       2,
                       o.FLOAT,
-                      false,
+                      !1,
                       0,
                       0,
                     ));
@@ -2609,7 +2549,7 @@ class TileMerger {
                       this.texPositionAttributeLocation,
                       2,
                       o.FLOAT,
-                      false,
+                      !1,
                       0,
                       0,
                     ),
@@ -2658,11 +2598,7 @@ class TileMerger {
     });
   }
 }
-
-// ============================================
-// MAPBOX SHADEMAP IMPLEMENTATION
-// ============================================
-class MapboxShadeMap extends ShadeMapBase {
+class ft extends at {
   constructor(t) {
     (super(t),
       (this.id = "shademap-layer"),
@@ -2755,10 +2691,10 @@ class MapboxShadeMap extends ShadeMapBase {
           (i.useProgram(n),
           i.bindBuffer(i.ARRAY_BUFFER, a),
           i.enableVertexAttribArray(s),
-          i.vertexAttribPointer(s, 2, i.FLOAT, false, 0, 0),
+          i.vertexAttribPointer(s, 2, i.FLOAT, !1, 0, 0),
           i.bindBuffer(i.ARRAY_BUFFER, u),
           i.enableVertexAttribArray(l),
-          i.vertexAttribPointer(l, 2, i.FLOAT, false, 0, 0),
+          i.vertexAttribPointer(l, 2, i.FLOAT, !1, 0, 0),
           null !== H &&
             (i.activeTexture(i.TEXTURE0), i.bindTexture(i.TEXTURE_2D, H)),
           o(i, X, G),
@@ -2901,7 +2837,7 @@ class MapboxShadeMap extends ShadeMapBase {
                   i.deleteFramebuffer(x),
                   i.deleteTexture(p),
                   i.uniform4fv(w, d),
-                  true
+                  !0
                 );
               yield new Promise((r, h) => {
                 window.requestAnimationFrame(() => {
@@ -2919,10 +2855,10 @@ class MapboxShadeMap extends ShadeMapBase {
                     i.uniform4fv(w, [1 / o, 0, 0, 1]),
                     i.bindBuffer(i.ARRAY_BUFFER, a),
                     i.enableVertexAttribArray(s),
-                    i.vertexAttribPointer(s, 2, i.FLOAT, false, 0, 0),
+                    i.vertexAttribPointer(s, 2, i.FLOAT, !1, 0, 0),
                     i.bindBuffer(i.ARRAY_BUFFER, u),
                     i.enableVertexAttribArray(l),
-                    i.vertexAttribPointer(l, 2, i.FLOAT, false, 0, 0),
+                    i.vertexAttribPointer(l, 2, i.FLOAT, !1, 0, 0),
                     i.viewport(0, 0, m, _),
                     i.enable(i.BLEND),
                     i.blendFunc(i.ONE, i.ONE),
@@ -2936,11 +2872,7 @@ class MapboxShadeMap extends ShadeMapBase {
               yield new Promise((t, e) => {
                 window.requestAnimationFrame(() => {
                   if ((i.useProgram(n), c !== j))
-                    return (
-                      i.deleteTexture(p),
-                      i.uniform4fv(w, d),
-                      void t(true)
-                    );
+                    return (i.deleteTexture(p), i.uniform4fv(w, d), void t(!0));
                   (i.activeTexture(i.TEXTURE2),
                     i.bindTexture(i.TEXTURE_2D, p),
                     i.uniform1i(U, 2),
@@ -2950,7 +2882,7 @@ class MapboxShadeMap extends ShadeMapBase {
                     i.uniform1i(U, 0),
                     i.deleteTexture(p),
                     i.uniform4fv(w, d),
-                    t(false));
+                    t(!1));
                 });
               })
             );
@@ -3034,10 +2966,10 @@ class MapboxShadeMap extends ShadeMapBase {
               (i.activeTexture(i.TEXTURE0), i.bindTexture(i.TEXTURE_2D, H)),
             i.bindBuffer(i.ARRAY_BUFFER, h),
             i.enableVertexAttribArray(s),
-            i.vertexAttribPointer(s, 2, i.FLOAT, false, 0, 0),
+            i.vertexAttribPointer(s, 2, i.FLOAT, !1, 0, 0),
             i.bindBuffer(i.ARRAY_BUFFER, c),
             i.enableVertexAttribArray(l),
-            i.vertexAttribPointer(l, 2, i.FLOAT, false, 0, 0),
+            i.vertexAttribPointer(l, 2, i.FLOAT, !1, 0, 0),
             i.viewport(0, 0, u, f),
             i.clear(i.COLOR_BUFFER_BIT),
             i.drawArrays(i.TRIANGLE_STRIP, 0, 4));
@@ -3107,10 +3039,10 @@ class MapboxShadeMap extends ShadeMapBase {
               (i.activeTexture(i.TEXTURE0), i.bindTexture(i.TEXTURE_2D, H)),
             i.bindBuffer(i.ARRAY_BUFFER, h),
             i.enableVertexAttribArray(s),
-            i.vertexAttribPointer(s, 2, i.FLOAT, false, 0, 0),
+            i.vertexAttribPointer(s, 2, i.FLOAT, !1, 0, 0),
             i.bindBuffer(i.ARRAY_BUFFER, c),
             i.enableVertexAttribArray(l),
-            i.vertexAttribPointer(l, 2, i.FLOAT, false, 0, 0),
+            i.vertexAttribPointer(l, 2, i.FLOAT, !1, 0, 0),
             i.viewport(0, 0, g, p),
             i.clear(i.COLOR_BUFFER_BIT),
             i.drawArrays(i.TRIANGLE_STRIP, 0, 4));
@@ -3157,9 +3089,9 @@ class MapboxShadeMap extends ShadeMapBase {
           t.blendFunc(t.SRC_ALPHA, t.ONE_MINUS_SRC_ALPHA));
       },
     })),
-      (this._tileMerger = new TileMerger(this._gl)),
-      (this._canopyMerger = new TileMerger(this._gl)),
-      (this._buildingRasterizer = new BuildingRasterizer(this._gl)),
+      (this._tileMerger = new ct(this._gl)),
+      (this._canopyMerger = new ct(this._gl)),
+      (this._buildingRasterizer = new lt(this._gl)),
       document.body.appendChild(this._canvas),
       (this._canvas.style.display = "none"));
     const r = e.getBounds(),
@@ -3178,7 +3110,7 @@ class MapboxShadeMap extends ShadeMapBase {
         type: "canvas",
         canvas: this._canvas,
         coordinates: s,
-        animate: false,
+        animate: !1,
       }),
       e.addLayer({
         id: this.canvasLayerId,
@@ -3341,6 +3273,4 @@ class MapboxShadeMap extends ShadeMapBase {
     return this;
   }
 }
-
-export { MapboxShadeMap as default };
-//# sourceMappingURL=mapbox-gl-shadow-simulator.esm.js.map
+export { ft as default };
