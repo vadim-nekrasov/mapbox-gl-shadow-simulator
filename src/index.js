@@ -12,50 +12,6 @@
 import type { LngLatLike, Map as MapboxMap, MapboxGeoJSONFeature } from 'mapbox-gl';
 
 
-// ============================================
-// ASYNC/AWAIT HELPER (TypeScript __awaiter polyfill)
-// ============================================
-// Note: These are low-level utility functions with minified names from the original source.
-// They are kept as-is to maintain stability and avoid potential bugs from renaming.
-
-/**
- * __awaiter helper - TypeScript's async/await polyfill for older JS targets
- * @param thisArg - The 'this' context
- * @param _arguments - Arguments to pass to the generator
- * @param P - Promise constructor
- * @param generator - The generator function
- */
-function t(t, e, r, o) {
-  return new (r || (r = Promise))(function (i, n) {
-    function a(t) {
-      try {
-        u(o.next(t));
-      } catch (t) {
-        n(t);
-      }
-    }
-    function s(t) {
-      try {
-        u(o.throw(t));
-      } catch (t) {
-        n(t);
-      }
-    }
-    function u(t) {
-      var e;
-      t.done
-        ? i(t.value)
-        : ((e = t.value),
-          e instanceof r
-            ? e
-            : new r(function (t) {
-                t(e);
-              })).then(a, s);
-    }
-    u((o = o.apply(t, e || [])).next());
-  });
-}
-
 /**
  * Wraps a value within a range [min, max]
  * Used for wrapping longitude/latitude values
@@ -81,14 +37,6 @@ function r(t, e) {
 // ============================================
 // GEOMETRY UTILITIES (Point, Bounds, LatLng)
 // ============================================
-/**
- * Array.isArray polyfill for older browsers
- */
-var o =
-  Array.isArray ||
-  function (t) {
-    return "[object Array]" === Object.prototype.toString.call(t);
-  };
 
 /**
  * Point constructor - represents a 2D point with x,y coordinates
@@ -98,18 +46,10 @@ function i(t, e, r) {
   ((this.x = r ? Math.round(t) : t), (this.y = r ? Math.round(e) : e));
 }
 
-/**
- * Math.trunc polyfill for older browsers
- */
-var n =
-  Math.trunc ||
-  function (t) {
-    return t > 0 ? Math.floor(t) : Math.ceil(t);
-  };
 function a(t, e, r) {
   return t instanceof i
     ? t
-    : o(t)
+    : Array.isArray(t)
       ? new i(t[0], t[1])
       : null == t
         ? t
@@ -189,7 +129,7 @@ function h(t, e) {
     return this.clone()._trunc();
   },
   _trunc: function () {
-    return ((this.x = n(this.x)), (this.y = n(this.y)), this);
+    return ((this.x = Math.trunc(this.x)), (this.y = Math.trunc(this.y)), this);
   },
   distanceTo: function (t) {
     var e = (t = a(t)).x - this.x,
@@ -484,7 +424,7 @@ function f(t, e, r) {
 function d(t, e, r) {
   return t instanceof f
     ? t
-    : o(t) && "object" != typeof t[0]
+    : Array.isArray(t) && "object" != typeof t[0]
       ? 3 === t.length
         ? new f(t[0], t[1], t[2])
         : 2 === t.length
@@ -1281,8 +1221,7 @@ let J,
     outputWidth: 0,
     outputHeight: 0,
   };
-const tt = (e) =>
-    t(void 0, void 0, void 0, function* () {
+const tt = async (e) => {
       const {
           demZoom: r,
           getFeatures: o,
@@ -1306,15 +1245,15 @@ const tt = (e) =>
         } = n,
         A =
           ((b = { getFeatures: o }),
-          t(void 0, void 0, void 0, function* () {
+          (async () => {
             const { getFeatures: t } = b;
             try {
-              return V(yield t());
+              return V(await t());
             } catch (t) {
               console.log("Error merging buildings", t);
             }
             return [];
-          }));
+          })());
       var b;
       try {
         const t = f,
@@ -1420,7 +1359,7 @@ const tt = (e) =>
                 t(e));
             }),
           );
-        const [O, z] = yield Promise.all(N);
+        const [O, z] = await Promise.all(N);
         if (null === O || null === z)
           return (
             (Q = Object.assign(Object.assign({}, Q), {
@@ -1437,7 +1376,7 @@ const tt = (e) =>
           G = X.min.subtract(w.min),
           H = X.max.subtract(w.min),
           W = [G.x / F, G.y / L, H.x / F, H.y / L].map((t) => 2 * t - 1),
-          j = yield A,
+          j = await A,
           { maxHeight: Y, heightMapTex: Z } = d.raster({
             upperLeftTile: D[0],
             width: F,
@@ -1469,8 +1408,8 @@ const tt = (e) =>
         console.error("Could not decode height map", t);
       }
       return Q;
-    }),
-  et = (t, e) => {
+    };
+const et = (t, e) => {
     const { r: r, g: o, b: i } = t;
     return [r / 255, o / 255, i / 255, e];
   },
@@ -1479,10 +1418,9 @@ const tt = (e) =>
       { dec: o, Hi: i } = g(r);
     t.updateDate({ dec: o, Hi: i });
   },
-  ot = (e, r) =>
-    t(void 0, void 0, void 0, function* () {
-      return yield e.updateDateRange(Object.assign({}, r));
-    }),
+  ot = async (e, r) => {
+      return await e.updateDateRange(Object.assign({}, r));
+    },
   it = (t, e) => {
     const { color: r, opacity: o } = e,
       i = et(r, o);
@@ -1615,18 +1553,14 @@ class ShadeMapBase extends EventEmitter {
       body: JSON.stringify({ api_key: this.options.apiKey }),
       headers: { "Content-Type": "application/json" },
     })
-      .then((e) =>
-        t(this, void 0, void 0, function* () {
-          if (200 !== e.status) throw new Error(yield e.text());
-        }),
-      )
-      .catch((e) =>
-        t(this, void 0, void 0, function* () {
+      .then(async (e) => {
+          if (200 !== e.status) throw new Error(await e.text());
+      })
+      .catch(async (e) => {
           throw new Error(
             `Could not load ShadeMap API. Key: ${this.options.apiKey} Error: ${e}`,
           );
-        }),
-      ),
+      }),
       (this._canvas = document.createElement("canvas")),
       (this._color = this._parseColor(this.options.color)),
       (this._reset = this._reset.bind(this)),
@@ -1709,56 +1643,54 @@ class ShadeMapBase extends EventEmitter {
       this
     );
   }
-  setSunExposure(e = !1, r) {
-    return t(this, void 0, void 0, function* () {
-      if (
-        ((this.options.sunExposure = Object.assign(
-          Object.assign({}, this.options.sunExposure),
-          { enabled: e },
-        )),
-        r)
-      ) {
+  async setSunExposure(e = !1, r) {
+    if (
+      ((this.options.sunExposure = Object.assign(
+        Object.assign({}, this.options.sunExposure),
+        { enabled: e },
+      )),
+      r)
+    ) {
+      const {
+        startDate: t = new Date(),
+        endDate: o = new Date(),
+        iterations: i = 32,
+      } = r;
+      this.options.sunExposure = {
+        enabled: e,
+        startDate: t,
+        endDate: o,
+        iterations: i,
+      };
+    }
+    if (this._map && this._compiledKernel && this._heightMap) {
+      if (!1 === e) rt(this._compiledKernel, { date: this.options.date });
+      else {
         const {
-          startDate: t = new Date(),
-          endDate: o = new Date(),
-          iterations: i = 32,
-        } = r;
-        this.options.sunExposure = {
-          enabled: e,
           startDate: t,
-          endDate: o,
-          iterations: i,
-        };
-      }
-      if (this._map && this._compiledKernel && this._heightMap) {
-        if (!1 === e) rt(this._compiledKernel, { date: this.options.date });
-        else {
-          const {
+          endDate: e,
+          iterations: r,
+        } = this.options.sunExposure;
+        if (!(t instanceof Date && e instanceof Date))
+          throw new Error("Start date or end date or both are missing");
+        if (e.getTime() < t.getTime())
+          throw new Error(
+            "End date must come after the start date to calculate sun exposure",
+          );
+        if (
+          !0 ===
+          (await ot(this._compiledKernel, {
             startDate: t,
             endDate: e,
             iterations: r,
-          } = this.options.sunExposure;
-          if (!(t instanceof Date && e instanceof Date))
-            throw new Error("Start date or end date or both are missing");
-          if (e.getTime() < t.getTime())
-            throw new Error(
-              "End date must come after the start date to calculate sun exposure",
-            );
-          if (
-            !0 ===
-            (yield ot(this._compiledKernel, {
-              startDate: t,
-              endDate: e,
-              iterations: r,
-              emit: this.emit.bind(this),
-            }))
-          )
-            return this;
-        }
-        this._flush();
+            emit: this.emit.bind(this),
+          }))
+        )
+          return this;
       }
-      return this;
-    });
+      this._flush();
+    }
+    return this;
   }
   _lngLatToTextureCoords(t) {
     if (this._heightMap) {
@@ -1793,113 +1725,109 @@ class ShadeMapBase extends EventEmitter {
     );
     return Math.round(e);
   }
-  _reset() {
-    return t(this, void 0, void 0, function* () {
-      if ((this.options.debug("_reset()"), this._map)) {
-        const t = T(this._map);
-        let e = this._getDEMZoom(t);
-        try {
-          this._bounds = this._getBounds(t, e);
-        } catch (t) {
-          return (console.error("Invalid bounds returned: ", t), this);
-        }
-        try {
-          if (!t.isLeaflet() && this._map.getPitch() > 45) {
-            yield new Promise((t) => {
-              this._map.loaded()
-                ? t(!0)
-                : this._map.once("idle", function () {
-                    t(!0);
-                  });
-            });
-            const r = this._map.style._sourceCaches["other:composite"]
-                .getVisibleCoordinates()
-                .reverse(),
-              o = r.reduce(
-                (t, e) => Math.max(t, e.canonical.z),
-                Number.MIN_SAFE_INTEGER,
-              ),
-              n = r.filter((t) => t.canonical.z === o).map((t) => t.canonical),
-              [a, s, u, l] = n.reduce(
-                (t, e) => [
-                  Math.min(t[0], e.x),
-                  Math.min(t[1], e.y),
-                  Math.max(t[2], e.x),
-                  Math.max(t[3], e.y),
-                ],
-                [
-                  Number.MAX_SAFE_INTEGER,
-                  Number.MAX_SAFE_INTEGER,
-                  Number.MIN_SAFE_INTEGER,
-                  Number.MIN_SAFE_INTEGER,
-                ],
-              ),
-              h = $(new i(512 * a, 512 * s), o + 1),
-              c = $(new i(512 * (u + 1), 512 * (l + 1)), o + 1);
-            ((e = o + 1), (this._bounds = t.createBounds({ nw: h, se: c })));
-          }
-        } catch (t) {
-          console.log("Mapbox tile optimization failed", t);
-        }
-        const r = yield tt({
-          gl: this._gl,
-          demZoom: e,
-          bounds: this._bounds,
-          terrainSource: this.options.terrainSource,
-          canopySource: this.options.canopySource,
-          dsmSource: this.options.dsmSource,
-          getFeatures: this.options.getFeatures,
-          buildingRasterizer: this._buildingRasterizer,
-          tileMerger: this._tileMerger,
-          canopyMerger: this._canopyMerger,
-          tileLoaded: (t, e) => this.emit("tileloaded", t, e),
-          forceUpdate: !this._heightMap,
-        });
-        ((this._heightMap = r), r.dirty && (yield this._draw(r)));
+  async _reset() {
+    if ((this.options.debug("_reset()"), this._map)) {
+      const t = T(this._map);
+      let e = this._getDEMZoom(t);
+      try {
+        this._bounds = this._getBounds(t, e);
+      } catch (t) {
+        return (console.error("Invalid bounds returned: ", t), this);
       }
-      return this;
-    });
+      try {
+        if (!t.isLeaflet() && this._map.getPitch() > 45) {
+          await new Promise((t) => {
+            this._map.loaded()
+              ? t(!0)
+              : this._map.once("idle", function () {
+                  t(!0);
+                });
+          });
+          const r = this._map.style._sourceCaches["other:composite"]
+              .getVisibleCoordinates()
+              .reverse(),
+            o = r.reduce(
+              (t, e) => Math.max(t, e.canonical.z),
+              Number.MIN_SAFE_INTEGER,
+            ),
+            n = r.filter((t) => t.canonical.z === o).map((t) => t.canonical),
+            [a, s, u, l] = n.reduce(
+              (t, e) => [
+                Math.min(t[0], e.x),
+                Math.min(t[1], e.y),
+                Math.max(t[2], e.x),
+                Math.max(t[3], e.y),
+              ],
+              [
+                Number.MAX_SAFE_INTEGER,
+                Number.MAX_SAFE_INTEGER,
+                Number.MIN_SAFE_INTEGER,
+                Number.MIN_SAFE_INTEGER,
+              ],
+            ),
+            h = $(new i(512 * a, 512 * s), o + 1),
+            c = $(new i(512 * (u + 1), 512 * (l + 1)), o + 1);
+          ((e = o + 1), (this._bounds = t.createBounds({ nw: h, se: c })));
+        }
+      } catch (t) {
+        console.log("Mapbox tile optimization failed", t);
+      }
+      const r = await tt({
+        gl: this._gl,
+        demZoom: e,
+        bounds: this._bounds,
+        terrainSource: this.options.terrainSource,
+        canopySource: this.options.canopySource,
+        dsmSource: this.options.dsmSource,
+        getFeatures: this.options.getFeatures,
+        buildingRasterizer: this._buildingRasterizer,
+        tileMerger: this._tileMerger,
+        canopyMerger: this._canopyMerger,
+        tileLoaded: (t, e) => this.emit("tileloaded", t, e),
+        forceUpdate: !this._heightMap,
+      });
+      ((this._heightMap = r), r.dirty && (await this._draw(r)));
+    }
+    return this;
   }
-  _draw(e) {
-    return t(this, void 0, void 0, function* () {
+  async _draw(e) {
+    if (
+      (this.options.debug("_draw()"),
+      this._canvas && this._compiledKernel && this._map)
+    ) {
       if (
-        (this.options.debug("_draw()"),
-        this._canvas && this._compiledKernel && this._map)
+        (nt({
+          kernel: this._compiledKernel,
+          map: T(this._map),
+          heightMap: e,
+          color: this._color,
+          belowCanopy: this.options.belowCanopy,
+          opacity: this.options.opacity,
+          now: this.options.date,
+          maxZoom: this.options.terrainSource.maxZoom,
+          skipRender: this.options.sunExposure.enabled,
+        }),
+        this.options.sunExposure.enabled)
       ) {
+        const {
+          startDate: t,
+          endDate: e,
+          iterations: r,
+        } = this.options.sunExposure;
         if (
-          (nt({
-            kernel: this._compiledKernel,
-            map: T(this._map),
-            heightMap: e,
-            color: this._color,
-            belowCanopy: this.options.belowCanopy,
-            opacity: this.options.opacity,
-            now: this.options.date,
-            maxZoom: this.options.terrainSource.maxZoom,
-            skipRender: this.options.sunExposure.enabled,
-          }),
-          this.options.sunExposure.enabled)
-        ) {
-          const {
+          !0 ===
+          (await ot(this._compiledKernel, {
             startDate: t,
             endDate: e,
             iterations: r,
-          } = this.options.sunExposure;
-          if (
-            !0 ===
-            (yield ot(this._compiledKernel, {
-              startDate: t,
-              endDate: e,
-              iterations: r,
-              emit: this.emit.bind(this),
-            }))
-          )
-            return this;
-        }
-        this._bounds && this._repositionCanvas(this._bounds);
+            emit: this.emit.bind(this),
+          }))
+        )
+          return this;
       }
-      return this;
-    });
+      this._bounds && this._repositionCanvas(this._bounds);
+    }
+    return this;
   }
   readPixel(t, e) {
     const r = new Uint8Array(4),
@@ -1934,16 +1862,12 @@ class ShadeMapBase extends EventEmitter {
       i
     );
   }
-  isPositionInSun(e, r) {
-    return t(this, void 0, void 0, function* () {
-      const t = this.readPixel(e, r);
-      return 0 === t[0] && 0 === t[1] && 0 === t[2] && 0 === t[3];
-    });
+  async isPositionInSun(e, r) {
+    const t = this.readPixel(e, r);
+    return 0 === t[0] && 0 === t[1] && 0 === t[2] && 0 === t[3];
   }
-  isPositionInShade(e, r) {
-    return t(this, void 0, void 0, function* () {
-      return !(yield this.isPositionInSun(e, r));
-    });
+  async isPositionInShade(e, r) {
+    return !(await this.isPositionInSun(e, r));
   }
   toGeoTiff() {
     const t = (t, e) => {
@@ -2499,21 +2423,20 @@ class TileMerger {
       (this.inProgress = []),
       (this.finished = 0));
   }
-  merge(e, r) {
-    return t(this, void 0, void 0, function* () {
-      const o = this.gl;
-      let i = 0;
-      const {
-        width: n,
-        height: a,
-        crossOrigin: s,
-        getSourceUrl: u,
-        getElevation: l,
-        tileSize: h,
-        tileLoaded: c,
-        maxZoom: f,
-      } = r;
-      if (o) {
+  async merge(e, r) {
+    const o = this.gl;
+    let i = 0;
+    const {
+      width: n,
+      height: a,
+      crossOrigin: s,
+      getSourceUrl: u,
+      getElevation: l,
+      tileSize: h,
+      tileLoaded: c,
+      maxZoom: f,
+    } = r;
+    if (o) {
         (this.inProgress.forEach((t) => (t.src = "")),
           (this.inProgress = []),
           (this.finished = 0));
@@ -2551,8 +2474,7 @@ class TileMerger {
         (g !== o.FRAMEBUFFER_COMPLETE &&
           console.error("Framebuffer is incomplete: " + g),
           o.clear(o.COLOR_BUFFER_BIT));
-        const p = Array.from(r).map((r) =>
-          t(this, void 0, void 0, function* () {
+        const p = Array.from(r).map(async (r) => {
             return new Promise((t, l) => {
               const c = new Image();
               (this.inProgress.push(c),
@@ -2658,10 +2580,9 @@ class TileMerger {
             }).then(() => {
               (this.finished++, c(this.finished, this.inProgress.length));
             });
-          }),
-        );
+        });
         try {
-          yield Promise.all(p);
+          await Promise.all(p);
         } catch (t) {
           return (console.log(`${p.length} requests aborted`, t), null);
         }
@@ -2673,7 +2594,6 @@ class TileMerger {
         );
       }
       throw new Error("Could not get canvas context for merging tile images");
-    });
   }
 }
 
@@ -2882,8 +2802,7 @@ class MapboxShadeMap extends ShadeMapBase {
             window.cancelAnimationFrame(z),
             (z = window.requestAnimationFrame(W)));
         },
-        updateDateRange: (e) =>
-          t(this, void 0, void 0, function* () {
+        updateDateRange: async (e) => {
             const { startDate: t, endDate: r, iterations: o, emit: h } = e;
             i.useProgram(n);
             const c = (j = Date.now()),
@@ -2921,7 +2840,7 @@ class MapboxShadeMap extends ShadeMapBase {
                   i.uniform4fv(w, d),
                   !0
                 );
-              yield new Promise((r, h) => {
+              await new Promise((r, h) => {
                 window.requestAnimationFrame(() => {
                   (i.useProgram(n),
                     null !== H &&
@@ -2951,7 +2870,7 @@ class MapboxShadeMap extends ShadeMapBase {
             }
             return (
               i.deleteFramebuffer(x),
-              yield new Promise((t, e) => {
+              await new Promise((t, e) => {
                 window.requestAnimationFrame(() => {
                   if ((i.useProgram(n), c !== j))
                     return (i.deleteTexture(p), i.uniform4fv(w, d), void t(!0));
@@ -2968,7 +2887,7 @@ class MapboxShadeMap extends ShadeMapBase {
                 });
               })
             );
-          }),
+          },
         updateColor: (t) => {
           const { colorVec: e } = t;
           (i.useProgram(n),
@@ -3313,19 +3232,15 @@ class MapboxShadeMap extends ShadeMapBase {
     }
     return i;
   }
-  isPositionInSun(e, r) {
+  async isPositionInSun(e, r) {
     const o = Object.create(null, {
       isPositionInSun: { get: () => super.isPositionInSun },
     });
-    return t(this, void 0, void 0, function* () {
-      const t = this._getHeightMapCoords(e, r);
-      return o.isPositionInSun.call(this, t.x, t.y);
-    });
+    const t = this._getHeightMapCoords(e, r);
+    return o.isPositionInSun.call(this, t.x, t.y);
   }
-  isPositionInShade(e, r) {
-    return t(this, void 0, void 0, function* () {
-      return !(yield this.isPositionInSun(e, r));
-    });
+  async isPositionInShade(e, r) {
+    return !(await this.isPositionInSun(e, r));
   }
   _flush() {
     if (this._map) {
