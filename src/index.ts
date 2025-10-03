@@ -2,15 +2,86 @@
  * Mapbox GL Shadow Simulator - Deobfuscated Source
  * Original Package: mapbox-gl-shadow-simulator v0.63.0
  * Copyright Ted Piotrowski 2025
- * 
+ *
  * This is a deobfuscated version for development and modification purposes.
  * Original minified code has been reformatted and partially renamed for readability.
- * 
+ *
  * For licensing visit: https://shademap.app/about/
  */
 
-import type { LngLatLike, Map as MapboxMap, MapboxGeoJSONFeature } from 'mapbox-gl';
+import type {
+  LngLatLike,
+  Map as MapboxMap,
+  MapboxGeoJSONFeature,
+} from "mapbox-gl";
 
+// ============================================
+// TYPESCRIPT INTERFACES
+// ============================================
+
+export interface TerrainSourceOptions {
+  maxZoom: number;
+  tileSize: number;
+  _overzoom?: number;
+  getSourceUrl: (coords: { x: number; y: number; z: number }) => string;
+  getElevation: (pixel: {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+  }) => number;
+}
+
+export interface DSMSourceOptions {
+  bounds: Array<{ lat: number; lng: number }>;
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+  maxHeight: number;
+}
+
+export interface CanopySourceOptions {
+  bounds: Array<{ lat: number; lng: number }>;
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+  maxHeight: number;
+}
+
+export interface SunExposureOptions {
+  enabled?: boolean;
+  startDate?: Date;
+  endDate?: Date;
+  iterations?: number;
+}
+
+export interface SunExposureSetOptions {
+  startDate?: Date;
+  endDate?: Date;
+  iterations?: number;
+}
+
+export interface ShadeMapOptions {
+  apiKey: string;
+  date?: Date;
+  color?: string;
+  opacity?: number;
+  sunExposure?: SunExposureOptions;
+  terrainSource?: TerrainSourceOptions;
+  canopySource?: CanopySourceOptions;
+  dsmSource?: DSMSourceOptions;
+  belowCanopy?: boolean;
+  getFeatures?: () => Promise<MapboxGeoJSONFeature[]>;
+  getSize?: () => { width: number; height: number };
+  debug?: (message: string) => void;
+}
+
+export type TileLoadedCallback = (
+  loadedTiles: number,
+  totalTiles: number,
+) => void;
+export type IdleCallback = () => void;
+export type EventCallback = (...args: any[]) => void;
 
 /**
  * Wraps a value within a range [min, max]
@@ -575,35 +646,45 @@ const T = (t) => {
 // EVENT EMITTER
 // ============================================
 class EventEmitter {
+  protected events: Record<string, EventCallback[]>;
+
   constructor() {
     this.events = {};
   }
-  on(t, e) {
+
+  on(eventName: string, callback: EventCallback): () => void {
     return (
-      "object" != typeof this.events[t] && (this.events[t] = []),
-      this.events[t].push(e),
-      () => this.removeListener(t, e)
+      "object" != typeof this.events[eventName] &&
+        (this.events[eventName] = []),
+      this.events[eventName].push(callback),
+      () => this.removeListener(eventName, callback)
     );
   }
-  removeListener(t, e) {
-    if ("object" != typeof this.events[t]) return;
-    const r = this.events[t].indexOf(e);
-    r > -1 && this.events[t].splice(r, 1);
+
+  removeListener(eventName: string, callback: EventCallback): void {
+    if ("object" != typeof this.events[eventName]) return;
+    const index = this.events[eventName].indexOf(callback);
+    index > -1 && this.events[eventName].splice(index, 1);
   }
-  removeAllListeners() {
-    Object.keys(this.events).forEach((t) =>
-      this.events[t].splice(0, this.events[t].length),
+
+  removeAllListeners(): void {
+    Object.keys(this.events).forEach((eventName) =>
+      this.events[eventName].splice(0, this.events[eventName].length),
     );
   }
-  emit(t, ...e) {
-    "object" == typeof this.events[t] &&
-      [...this.events[t]].forEach((t) => t.apply(this, e));
+
+  emit(eventName: string, ...args: any[]): void {
+    "object" == typeof this.events[eventName] &&
+      [...this.events[eventName]].forEach((callback) =>
+        callback.apply(this, args),
+      );
   }
-  once(t, e) {
-    const r = this.on(t, (...t) => {
-      (r(), e.apply(this, t));
+
+  once(eventName: string, callback: EventCallback): () => void {
+    const removeListener = this.on(eventName, (...args) => {
+      (removeListener(), callback.apply(this, args));
     });
-    return r;
+    return removeListener;
   }
 }
 
@@ -1222,193 +1303,193 @@ let J,
     outputHeight: 0,
   };
 const tt = async (e) => {
-      const {
+  const {
+      demZoom: r,
+      getFeatures: o,
+      terrainSource: n,
+      canopySource: a,
+      dsmSource: u,
+      tileLoaded: h,
+      gl: c,
+      bounds: f,
+      buildingRasterizer: d,
+      tileMerger: _,
+      canopyMerger: g,
+      forceUpdate: p = !1,
+    } = e,
+    {
+      getSourceUrl: x,
+      getElevation: E,
+      maxZoom: v,
+      tileSize: T,
+      _overzoom: y,
+    } = n,
+    A =
+      ((b = { getFeatures: o }),
+      (async () => {
+        const { getFeatures: t } = b;
+        try {
+          return V(await t());
+        } catch (t) {
+          console.log("Error merging buildings", t);
+        }
+        return [];
+      })());
+  var b;
+  try {
+    const t = f,
+      e = t.getNorthWest(),
+      o = t.getSouthEast(),
+      n = new s(q(e, r), q(o, r));
+    let y = new i(n.min.x, n.min.y),
+      b = n.max.x - n.min.x;
+    const R = n.max.y - n.min.y,
+      M = n.max.subtract(n.min);
+    M.y > M.x && ((y.x -= m), (b += 512));
+    const w = ((t) => {
+        const { upperLeft: e, width: r, height: o } = t,
+          i = e.divideBy(m).floor().multiplyBy(m),
+          n = (Math.ceil(r / m) + 1) * m,
+          a = (Math.ceil(o / m) + 1) * m,
+          u = i.add([n, a]);
+        return new s(i, u);
+      })({ upperLeft: y, width: b, height: R }),
+      { x: F, y: L } = w.max.subtract(w.min),
+      U = ((t) => {
+        const { upperLeft: e, width: r, height: o, zoom: i } = t,
+          n = e.divideBy(m).floor(),
+          a = n.x + r / m,
+          s = Math.min(n.y + o / m, Math.pow(2, i) - 1),
+          u = [];
+        for (var l = n.x; l < a; l++)
+          for (var h = n.y; h < s; h++) u.push({ x: l, y: h, z: i });
+        return u;
+      })({ upperLeft: w.min, width: F, height: L, zoom: r }),
+      D = ((t) => {
+        t.sort((t, e) => (t.y !== e.y ? t.y - e.y : t.x - e.x));
+        const e = t.reduce((t, e) => (e.x < t.x ? e : t)).x,
+          r = t.reduce((t, e) => (e.y < t.y ? e : t)).y;
+        return t.map((t) => {
+          const o = Math.pow(2, t.z);
+          return {
+            x: ((t.x % o) + o) % o,
+            y: ((t.y % o) + o) % o,
+            z: t.z,
+            xOffset: (t.x - e) * m,
+            yOffset: (t.y - r) * m,
+          };
+        });
+      })(U),
+      S = n.max.x - n.min.x,
+      P = n.max.y - n.min.y,
+      C = Math.round(S),
+      I = Math.round(P),
+      B = JSON.stringify(D);
+    if (!p && B === J && r < v)
+      return (
+        (Q = Object.assign(Object.assign({}, Q), {
+          outputWidth: C,
+          outputHeight: I,
+          visibleDEMPixelBounds: n,
           demZoom: r,
-          getFeatures: o,
-          terrainSource: n,
-          canopySource: a,
-          dsmSource: u,
-          tileLoaded: h,
-          gl: c,
-          bounds: f,
-          buildingRasterizer: d,
-          tileMerger: _,
-          canopyMerger: g,
-          forceUpdate: p = !1,
-        } = e,
-        {
-          getSourceUrl: x,
-          getElevation: E,
-          maxZoom: v,
-          tileSize: T,
-          _overzoom: y,
-        } = n,
-        A =
-          ((b = { getFeatures: o }),
-          (async () => {
-            const { getFeatures: t } = b;
-            try {
-              return V(await t());
-            } catch (t) {
-              console.log("Error merging buildings", t);
-            }
-            return [];
-          })());
-      var b;
-      try {
-        const t = f,
-          e = t.getNorthWest(),
-          o = t.getSouthEast(),
-          n = new s(q(e, r), q(o, r));
-        let y = new i(n.min.x, n.min.y),
-          b = n.max.x - n.min.x;
-        const R = n.max.y - n.min.y,
-          M = n.max.subtract(n.min);
-        M.y > M.x && ((y.x -= m), (b += 512));
-        const w = ((t) => {
-            const { upperLeft: e, width: r, height: o } = t,
-              i = e.divideBy(m).floor().multiplyBy(m),
-              n = (Math.ceil(r / m) + 1) * m,
-              a = (Math.ceil(o / m) + 1) * m,
-              u = i.add([n, a]);
-            return new s(i, u);
-          })({ upperLeft: y, width: b, height: R }),
-          { x: F, y: L } = w.max.subtract(w.min),
-          U = ((t) => {
-            const { upperLeft: e, width: r, height: o, zoom: i } = t,
-              n = e.divideBy(m).floor(),
-              a = n.x + r / m,
-              s = Math.min(n.y + o / m, Math.pow(2, i) - 1),
-              u = [];
-            for (var l = n.x; l < a; l++)
-              for (var h = n.y; h < s; h++) u.push({ x: l, y: h, z: i });
-            return u;
-          })({ upperLeft: w.min, width: F, height: L, zoom: r }),
-          D = ((t) => {
-            t.sort((t, e) => (t.y !== e.y ? t.y - e.y : t.x - e.x));
-            const e = t.reduce((t, e) => (e.x < t.x ? e : t)).x,
-              r = t.reduce((t, e) => (e.y < t.y ? e : t)).y;
-            return t.map((t) => {
-              const o = Math.pow(2, t.z);
-              return {
-                x: ((t.x % o) + o) % o,
-                y: ((t.y % o) + o) % o,
-                z: t.z,
-                xOffset: (t.x - e) * m,
-                yOffset: (t.y - r) * m,
-              };
-            });
-          })(U),
-          S = n.max.x - n.min.x,
-          P = n.max.y - n.min.y,
-          C = Math.round(S),
-          I = Math.round(P),
-          B = JSON.stringify(D);
-        if (!p && B === J && r < v)
-          return (
-            (Q = Object.assign(Object.assign({}, Q), {
-              outputWidth: C,
-              outputHeight: I,
-              visibleDEMPixelBounds: n,
-              demZoom: r,
-              dirty: !0,
-            })),
-            Q
-          );
-        const N = [
-          _.merge(D, {
-            maxZoom: v,
-            width: F,
-            height: L,
-            crossOrigin: "Anonymous",
-            getSourceUrl: x,
-            getElevation: E,
-            tileSize: T,
-            tileLoaded: h,
-          }),
-        ];
-        if (void 0 !== a) {
-          const t = g.merge(D, {
-            maxZoom: a.maxZoom,
-            width: F,
-            height: L,
-            crossOrigin: "Anonymous",
-            getSourceUrl: a.getSourceUrl,
-            getElevation: a.getElevation,
-            tileSize: a.tileSize,
-            tileLoaded: h,
-          });
-          N.push(t);
-        } else
-          N.push(
-            new Promise((t) => {
-              const e = c.createTexture();
-              (c.activeTexture(c.TEXTURE2),
-                c.bindTexture(c.TEXTURE_2D, e),
-                c.texImage2D(
-                  c.TEXTURE_2D,
-                  0,
-                  c.RGBA,
-                  1,
-                  1,
-                  0,
-                  c.RGBA,
-                  c.UNSIGNED_BYTE,
-                  new Uint8ClampedArray([0, 0, 0, 0]),
-                ),
-                t(e));
-            }),
-          );
-        const [O, z] = await Promise.all(N);
-        if (null === O || null === z)
-          return (
-            (Q = Object.assign(Object.assign({}, Q), {
-              visibleDEMPixelBounds: n,
-              demZoom: r,
-              dirty: !1,
-            })),
-            Q
-          );
-        const X = new s(
-            q(new l(u.bounds).getNorthWest(), r),
-            q(new l(u.bounds).getSouthEast(), r),
-          ),
-          G = X.min.subtract(w.min),
-          H = X.max.subtract(w.min),
-          W = [G.x / F, G.y / L, H.x / F, H.y / L].map((t) => 2 * t - 1),
-          j = await A,
-          { maxHeight: Y, heightMapTex: Z } = d.raster({
-            upperLeftTile: D[0],
-            width: F,
-            height: L,
-            mapZoom: r,
-            features: j,
-            imageData: O,
-            gl: c,
-            dsmSource: u,
-            dsmCoords: W,
-            canopyData: z,
-          }),
-          K = Math.max(u.maxHeight, O.maxHeight + Y);
-        ((J = B),
-          (Q = {
-            heightMapTex: Z,
-            maxHeight: K,
-            width: F,
-            height: L,
-            DEMPixelBounds: w,
-            visibleDEMPixelBounds: n,
-            raster: D,
-            demZoom: r,
-            dirty: !0,
-            outputWidth: C,
-            outputHeight: I,
-          }));
-      } catch (t) {
-        console.error("Could not decode height map", t);
-      }
-      return Q;
-    };
+          dirty: !0,
+        })),
+        Q
+      );
+    const N = [
+      _.merge(D, {
+        maxZoom: v,
+        width: F,
+        height: L,
+        crossOrigin: "Anonymous",
+        getSourceUrl: x,
+        getElevation: E,
+        tileSize: T,
+        tileLoaded: h,
+      }),
+    ];
+    if (void 0 !== a) {
+      const t = g.merge(D, {
+        maxZoom: a.maxZoom,
+        width: F,
+        height: L,
+        crossOrigin: "Anonymous",
+        getSourceUrl: a.getSourceUrl,
+        getElevation: a.getElevation,
+        tileSize: a.tileSize,
+        tileLoaded: h,
+      });
+      N.push(t);
+    } else
+      N.push(
+        new Promise((t) => {
+          const e = c.createTexture();
+          (c.activeTexture(c.TEXTURE2),
+            c.bindTexture(c.TEXTURE_2D, e),
+            c.texImage2D(
+              c.TEXTURE_2D,
+              0,
+              c.RGBA,
+              1,
+              1,
+              0,
+              c.RGBA,
+              c.UNSIGNED_BYTE,
+              new Uint8ClampedArray([0, 0, 0, 0]),
+            ),
+            t(e));
+        }),
+      );
+    const [O, z] = await Promise.all(N);
+    if (null === O || null === z)
+      return (
+        (Q = Object.assign(Object.assign({}, Q), {
+          visibleDEMPixelBounds: n,
+          demZoom: r,
+          dirty: !1,
+        })),
+        Q
+      );
+    const X = new s(
+        q(new l(u.bounds).getNorthWest(), r),
+        q(new l(u.bounds).getSouthEast(), r),
+      ),
+      G = X.min.subtract(w.min),
+      H = X.max.subtract(w.min),
+      W = [G.x / F, G.y / L, H.x / F, H.y / L].map((t) => 2 * t - 1),
+      j = await A,
+      { maxHeight: Y, heightMapTex: Z } = d.raster({
+        upperLeftTile: D[0],
+        width: F,
+        height: L,
+        mapZoom: r,
+        features: j,
+        imageData: O,
+        gl: c,
+        dsmSource: u,
+        dsmCoords: W,
+        canopyData: z,
+      }),
+      K = Math.max(u.maxHeight, O.maxHeight + Y);
+    ((J = B),
+      (Q = {
+        heightMapTex: Z,
+        maxHeight: K,
+        width: F,
+        height: L,
+        DEMPixelBounds: w,
+        visibleDEMPixelBounds: n,
+        raster: D,
+        demZoom: r,
+        dirty: !0,
+        outputWidth: C,
+        outputHeight: I,
+      }));
+  } catch (t) {
+    console.error("Could not decode height map", t);
+  }
+  return Q;
+};
 const et = (t, e) => {
     const { r: r, g: o, b: i } = t;
     return [r / 255, o / 255, i / 255, e];
@@ -1419,8 +1500,8 @@ const et = (t, e) => {
     t.updateDate({ dec: o, Hi: i });
   },
   ot = async (e, r) => {
-      return await e.updateDateRange(Object.assign({}, r));
-    },
+    return await e.updateDateRange(Object.assign({}, r));
+  },
   it = (t, e) => {
     const { color: r, opacity: o } = e,
       i = et(r, o);
@@ -1505,7 +1586,25 @@ const et = (t, e) => {
 // SHADEMAP BASE CLASS
 // ============================================
 class ShadeMapBase extends EventEmitter {
-  constructor(...e) {
+  protected options: Required<ShadeMapOptions> & {
+    sunExposure: Required<SunExposureOptions>;
+    terrainSource: Required<TerrainSourceOptions>;
+    dsmSource: Required<DSMSourceOptions>;
+    canopySource?: CanopySourceOptions;
+    getFeatures: () => Promise<MapboxGeoJSONFeature[]>;
+    getSize: () => { width: number; height: number };
+    debug: (message: string) => void;
+  };
+  protected _canvas?: HTMLCanvasElement;
+  protected _color?: { r: number; g: number; b: number };
+  protected _map?: MapboxMap;
+  protected _heightMap?: any;
+  protected _compiledKernel?: any;
+  protected _reset: () => void;
+  protected _draw: () => void;
+  protected _flush: () => void;
+
+  constructor(options: ShadeMapOptions) {
     (super(),
       (this.options = {
         date: new Date(),
@@ -1545,8 +1644,10 @@ class ShadeMapBase extends EventEmitter {
         getSize: () => ({ width: Number.NaN, height: Number.NaN }),
         debug: (t) => {},
       }));
-    const r = e[0];
-    if (((this.options = Object.assign(this.options, r)), !this.options.apiKey))
+    if (
+      ((this.options = Object.assign(this.options, options)),
+      !this.options.apiKey)
+    )
       throw new Error("Could not load ShadeMap: apiKey missing");
     (fetch("https://shademap.app/sdk/load", {
       method: "POST",
@@ -1554,25 +1655,26 @@ class ShadeMapBase extends EventEmitter {
       headers: { "Content-Type": "application/json" },
     })
       .then(async (e) => {
-          if (200 !== e.status) throw new Error(await e.text());
+        if (200 !== e.status) throw new Error(await e.text());
       })
       .catch(async (e) => {
-          throw new Error(
-            `Could not load ShadeMap API. Key: ${this.options.apiKey} Error: ${e}`,
-          );
+        throw new Error(
+          `Could not load ShadeMap API. Key: ${this.options.apiKey} Error: ${e}`,
+        );
       }),
       (this._canvas = document.createElement("canvas")),
       (this._color = this._parseColor(this.options.color)),
       (this._reset = this._reset.bind(this)),
       (this._draw = this._draw.bind(this)));
   }
-  onRemove() {
+  onRemove(): this {
     return (this._map && this._map.off("moveend", this._reset), this);
   }
-  setDate(t) {
+
+  setDate(date: Date): this {
     return (
-      this.options.date.getTime() !== t.getTime()
-        ? ((this.options.date = t),
+      this.options.date.getTime() !== date.getTime()
+        ? ((this.options.date = date),
           this._compiledKernel &&
             (rt(this._compiledKernel, { date: this.options.date }),
             this._heightMap && this._flush()))
@@ -1643,28 +1745,31 @@ class ShadeMapBase extends EventEmitter {
       this
     );
   }
-  async setSunExposure(e = !1, r) {
+  async setSunExposure(
+    enabled: boolean = false,
+    options?: SunExposureSetOptions,
+  ): Promise<this> {
     if (
       ((this.options.sunExposure = Object.assign(
         Object.assign({}, this.options.sunExposure),
-        { enabled: e },
+        { enabled },
       )),
-      r)
+      options)
     ) {
       const {
         startDate: t = new Date(),
         endDate: o = new Date(),
         iterations: i = 32,
-      } = r;
+      } = options;
       this.options.sunExposure = {
-        enabled: e,
+        enabled,
         startDate: t,
         endDate: o,
         iterations: i,
       };
     }
     if (this._map && this._compiledKernel && this._heightMap) {
-      if (!1 === e) rt(this._compiledKernel, { date: this.options.date });
+      if (!1 === enabled) rt(this._compiledKernel, { date: this.options.date });
       else {
         const {
           startDate: t,
@@ -2437,163 +2542,158 @@ class TileMerger {
       maxZoom: f,
     } = r;
     if (o) {
-        (this.inProgress.forEach((t) => (t.src = "")),
-          (this.inProgress = []),
-          (this.finished = 0));
-        const r = new Set();
-        (e.forEach((t) => {
-          r.add(u(ht({ tile: t, maxZoom: f, tileSize: h })));
-        }),
-          o.useProgram(this.program));
-        let d = 0;
-        (-32768 === l({ r: 0, g: 0, b: 0, a: 0 }) && (d = 0),
-          -1e4 === l({ r: 0, g: 0, b: 0, a: 0 }) && (d = 1),
-          4808 === l({ r: 256, g: 0, b: 0, a: 0 }) && (d = 2),
-          0 === l({ r: 51, g: 0, b: 66, a: 0 }) && (d = 3),
-          o.uniform1f(this.encodingUniformLocation, d),
-          st({
-            gl: o,
-            texture: this.outputTexture,
-            imageData: null,
-            format: o.RGBA,
-            width: n,
-            height: a,
-            wrap: o.CLAMP_TO_EDGE,
-            filter: o.NEAREST,
-          }));
-        const _ = o.createFramebuffer();
-        (o.bindFramebuffer(o.FRAMEBUFFER, _),
-          o.framebufferTexture2D(
-            o.FRAMEBUFFER,
-            o.COLOR_ATTACHMENT0,
-            o.TEXTURE_2D,
-            this.outputTexture,
-            0,
-          ));
-        const g = o.checkFramebufferStatus(o.FRAMEBUFFER);
-        (g !== o.FRAMEBUFFER_COMPLETE &&
-          console.error("Framebuffer is incomplete: " + g),
-          o.clear(o.COLOR_BUFFER_BIT));
-        const p = Array.from(r).map(async (r) => {
-            return new Promise((t, l) => {
-              const c = new Image();
-              (this.inProgress.push(c),
-                (c.onload = () => {
-                  (o.useProgram(this.program),
-                    o.activeTexture(o.TEXTURE0),
-                    o.bindTexture(o.TEXTURE_2D, this.tileTexture),
-                    o.texImage2D(
-                      o.TEXTURE_2D,
-                      0,
-                      o.RGBA,
-                      o.RGBA,
-                      o.UNSIGNED_BYTE,
-                      c,
-                    ),
-                    o.bindFramebuffer(o.FRAMEBUFFER, _));
-                  const s = e.filter(
-                      (t) => r === u(ht({ tile: t, maxZoom: f, tileSize: h })),
-                    ),
-                    l = s.reduce((t, e) => Math.min(t, e.xOffset), 1 / 0),
-                    d = s.reduce((t, e) => Math.min(t, e.yOffset), 1 / 0),
-                    g = s.reduce((t, e) => Math.max(t, e.xOffset), 0),
-                    p = s.reduce((t, e) => Math.max(t, e.yOffset), 0),
-                    x = s.reduce((t, e) => Math.min(t, e.x), 1 / 0),
-                    E = s.reduce((t, e) => Math.min(t, e.y), 1 / 0),
-                    v = s.reduce((t, e) => Math.max(t, e.x), 0),
-                    T = s.reduce((t, e) => Math.max(t, e.y), 0),
-                    y = s[0].z,
-                    A = l / n,
-                    b = d / a,
-                    R = (g + m) / n,
-                    M = (p + m) / a,
-                    w = [A, b, R, b, A, M, R, M].map((t) => 2 * t - 1);
-                  (o.bindBuffer(o.ARRAY_BUFFER, this.tilePositionBuffer),
-                    o.bufferData(
-                      o.ARRAY_BUFFER,
-                      new Float32Array(w),
-                      o.STATIC_DRAW,
-                    ),
-                    o.enableVertexAttribArray(
-                      this.tilePositionAttributeLocation,
-                    ),
-                    o.vertexAttribPointer(
-                      this.tilePositionAttributeLocation,
-                      2,
-                      o.FLOAT,
-                      !1,
-                      0,
-                      0,
-                    ));
-                  let F = [0, 0, 1, 0, 0, 1, 1, 1];
-                  const L = Math.pow(2, Math.max(0, y - f) + (h !== m ? 1 : 0)),
-                    U = 514 === h ? 1 / h : 0,
-                    D = 1 / L,
-                    S = (x % L) / L,
-                    P = (E % L) / L,
-                    C = (v % L) / L,
-                    I = (T % L) / L;
-                  ((F = [S, P, C + D, P, S, I + D, C + D, I + D].map(
-                    (t) => t * (514 === h ? 512 / 514 : 1) + U,
-                  )),
-                    o.bindBuffer(o.ARRAY_BUFFER, this.texPositionBuffer),
-                    o.bufferData(
-                      o.ARRAY_BUFFER,
-                      new Float32Array(F),
-                      o.STATIC_DRAW,
-                    ),
-                    o.enableVertexAttribArray(
-                      this.texPositionAttributeLocation,
-                    ),
-                    o.vertexAttribPointer(
-                      this.texPositionAttributeLocation,
-                      2,
-                      o.FLOAT,
-                      !1,
-                      0,
-                      0,
-                    ),
-                    o.uniform1f(this.tileSizeUniformLocation, h),
-                    o.viewport(0, 0, n, a),
-                    o.disable(o.BLEND),
-                    o.drawArrays(o.TRIANGLE_STRIP, 0, 4));
-                  const B = Math.floor(A * n),
-                    N = Math.floor(b * a),
-                    O = Math.ceil((R - A) * n),
-                    z = Math.ceil((M - b) * a),
-                    X = new Uint8Array(4 * O * z);
-                  o.readPixels(B, N, O, z, o.RGBA, o.UNSIGNED_BYTE, X);
-                  for (let t = 0; t < X.length; t += 4) {
-                    const e = (256 * X[t + 2] + X[t + 3]) / 5;
-                    i = Math.max(e, i);
-                  }
-                  t(null);
-                }),
-                (c.onerror = (e) => {
-                  if (c.src !== c.originalSource)
-                    return l("new tiles requested");
-                  t(null);
-                }),
-                (c.crossOrigin = s || null),
-                (c.src = r),
-                (c.originalSource = c.src));
-            }).then(() => {
-              (this.finished++, c(this.finished, this.inProgress.length));
-            });
+      (this.inProgress.forEach((t) => (t.src = "")),
+        (this.inProgress = []),
+        (this.finished = 0));
+      const r = new Set();
+      (e.forEach((t) => {
+        r.add(u(ht({ tile: t, maxZoom: f, tileSize: h })));
+      }),
+        o.useProgram(this.program));
+      let d = 0;
+      (-32768 === l({ r: 0, g: 0, b: 0, a: 0 }) && (d = 0),
+        -1e4 === l({ r: 0, g: 0, b: 0, a: 0 }) && (d = 1),
+        4808 === l({ r: 256, g: 0, b: 0, a: 0 }) && (d = 2),
+        0 === l({ r: 51, g: 0, b: 66, a: 0 }) && (d = 3),
+        o.uniform1f(this.encodingUniformLocation, d),
+        st({
+          gl: o,
+          texture: this.outputTexture,
+          imageData: null,
+          format: o.RGBA,
+          width: n,
+          height: a,
+          wrap: o.CLAMP_TO_EDGE,
+          filter: o.NEAREST,
+        }));
+      const _ = o.createFramebuffer();
+      (o.bindFramebuffer(o.FRAMEBUFFER, _),
+        o.framebufferTexture2D(
+          o.FRAMEBUFFER,
+          o.COLOR_ATTACHMENT0,
+          o.TEXTURE_2D,
+          this.outputTexture,
+          0,
+        ));
+      const g = o.checkFramebufferStatus(o.FRAMEBUFFER);
+      (g !== o.FRAMEBUFFER_COMPLETE &&
+        console.error("Framebuffer is incomplete: " + g),
+        o.clear(o.COLOR_BUFFER_BIT));
+      const p = Array.from(r).map(async (r) => {
+        return new Promise((t, l) => {
+          const c = new Image();
+          (this.inProgress.push(c),
+            (c.onload = () => {
+              (o.useProgram(this.program),
+                o.activeTexture(o.TEXTURE0),
+                o.bindTexture(o.TEXTURE_2D, this.tileTexture),
+                o.texImage2D(
+                  o.TEXTURE_2D,
+                  0,
+                  o.RGBA,
+                  o.RGBA,
+                  o.UNSIGNED_BYTE,
+                  c,
+                ),
+                o.bindFramebuffer(o.FRAMEBUFFER, _));
+              const s = e.filter(
+                  (t) => r === u(ht({ tile: t, maxZoom: f, tileSize: h })),
+                ),
+                l = s.reduce((t, e) => Math.min(t, e.xOffset), 1 / 0),
+                d = s.reduce((t, e) => Math.min(t, e.yOffset), 1 / 0),
+                g = s.reduce((t, e) => Math.max(t, e.xOffset), 0),
+                p = s.reduce((t, e) => Math.max(t, e.yOffset), 0),
+                x = s.reduce((t, e) => Math.min(t, e.x), 1 / 0),
+                E = s.reduce((t, e) => Math.min(t, e.y), 1 / 0),
+                v = s.reduce((t, e) => Math.max(t, e.x), 0),
+                T = s.reduce((t, e) => Math.max(t, e.y), 0),
+                y = s[0].z,
+                A = l / n,
+                b = d / a,
+                R = (g + m) / n,
+                M = (p + m) / a,
+                w = [A, b, R, b, A, M, R, M].map((t) => 2 * t - 1);
+              (o.bindBuffer(o.ARRAY_BUFFER, this.tilePositionBuffer),
+                o.bufferData(
+                  o.ARRAY_BUFFER,
+                  new Float32Array(w),
+                  o.STATIC_DRAW,
+                ),
+                o.enableVertexAttribArray(this.tilePositionAttributeLocation),
+                o.vertexAttribPointer(
+                  this.tilePositionAttributeLocation,
+                  2,
+                  o.FLOAT,
+                  !1,
+                  0,
+                  0,
+                ));
+              let F = [0, 0, 1, 0, 0, 1, 1, 1];
+              const L = Math.pow(2, Math.max(0, y - f) + (h !== m ? 1 : 0)),
+                U = 514 === h ? 1 / h : 0,
+                D = 1 / L,
+                S = (x % L) / L,
+                P = (E % L) / L,
+                C = (v % L) / L,
+                I = (T % L) / L;
+              ((F = [S, P, C + D, P, S, I + D, C + D, I + D].map(
+                (t) => t * (514 === h ? 512 / 514 : 1) + U,
+              )),
+                o.bindBuffer(o.ARRAY_BUFFER, this.texPositionBuffer),
+                o.bufferData(
+                  o.ARRAY_BUFFER,
+                  new Float32Array(F),
+                  o.STATIC_DRAW,
+                ),
+                o.enableVertexAttribArray(this.texPositionAttributeLocation),
+                o.vertexAttribPointer(
+                  this.texPositionAttributeLocation,
+                  2,
+                  o.FLOAT,
+                  !1,
+                  0,
+                  0,
+                ),
+                o.uniform1f(this.tileSizeUniformLocation, h),
+                o.viewport(0, 0, n, a),
+                o.disable(o.BLEND),
+                o.drawArrays(o.TRIANGLE_STRIP, 0, 4));
+              const B = Math.floor(A * n),
+                N = Math.floor(b * a),
+                O = Math.ceil((R - A) * n),
+                z = Math.ceil((M - b) * a),
+                X = new Uint8Array(4 * O * z);
+              o.readPixels(B, N, O, z, o.RGBA, o.UNSIGNED_BYTE, X);
+              for (let t = 0; t < X.length; t += 4) {
+                const e = (256 * X[t + 2] + X[t + 3]) / 5;
+                i = Math.max(e, i);
+              }
+              t(null);
+            }),
+            (c.onerror = (e) => {
+              if (c.src !== c.originalSource) return l("new tiles requested");
+              t(null);
+            }),
+            (c.crossOrigin = s || null),
+            (c.src = r),
+            (c.originalSource = c.src));
+        }).then(() => {
+          (this.finished++, c(this.finished, this.inProgress.length));
         });
-        try {
-          await Promise.all(p);
-        } catch (t) {
-          return (console.log(`${p.length} requests aborted`, t), null);
-        }
-        return (
-          (this.inProgress = []),
-          (this.outputTexture.maxHeight = i),
-          o.deleteFramebuffer(_),
-          this.outputTexture
-        );
+      });
+      try {
+        await Promise.all(p);
+      } catch (t) {
+        return (console.log(`${p.length} requests aborted`, t), null);
       }
-      throw new Error("Could not get canvas context for merging tile images");
+      return (
+        (this.inProgress = []),
+        (this.outputTexture.maxHeight = i),
+        o.deleteFramebuffer(_),
+        this.outputTexture
+      );
+    }
+    throw new Error("Could not get canvas context for merging tile images");
   }
 }
 
@@ -2601,8 +2701,24 @@ class TileMerger {
 // MAPBOX SHADEMAP IMPLEMENTATION
 // ============================================
 class MapboxShadeMap extends ShadeMapBase {
-  constructor(t) {
-    (super(t),
+  public id: string;
+  public type: string;
+  public canvasSourceId: string;
+  public attributionSourceId: string;
+  public canvasLayerId: string;
+  public attributionLayerId: string;
+  protected _refreshing: number;
+  protected _raf: number;
+  protected _moveEndHandler: () => void;
+  protected _gl?: any;
+  protected _framebuffer?: any;
+  protected _tileMerger?: any;
+  protected _canopyMerger?: any;
+  protected _buildingRasterizer?: any;
+  protected _bounds?: any;
+
+  constructor(options: ShadeMapOptions) {
+    (super(options),
       (this.id = "shademap-layer"),
       (this.type = "custom"),
       (this.canvasSourceId = "canvas-source"),
@@ -2623,9 +2739,11 @@ class MapboxShadeMap extends ShadeMapBase {
         this._map && this._reset();
       }));
   }
-  render(t, e) {}
-  addTo(t) {
-    return (t.addLayer(this), this);
+
+  render(gl: WebGLRenderingContext, matrix: number[]): void {}
+
+  addTo(map: MapboxMap): this {
+    return (map.addLayer(this as any), this);
   }
   onAdd(e) {
     ((this._map = e),
@@ -2803,91 +2921,91 @@ class MapboxShadeMap extends ShadeMapBase {
             (z = window.requestAnimationFrame(W)));
         },
         updateDateRange: async (e) => {
-            const { startDate: t, endDate: r, iterations: o, emit: h } = e;
-            i.useProgram(n);
-            const c = (j = Date.now()),
-              f = Math.floor((r.getTime() - t.getTime()) / o),
-              d = i.getUniform(n, w),
-              m = X,
-              _ = G,
-              p = i.createTexture();
-            (i.activeTexture(i.TEXTURE2),
-              i.bindTexture(i.TEXTURE_2D, p),
-              i.texImage2D(
-                i.TEXTURE_2D,
-                0,
-                i.RGBA,
-                m,
-                _,
-                0,
-                i.RGBA,
-                i.UNSIGNED_BYTE,
-                null,
-              ),
-              i.texParameteri(i.TEXTURE_2D, i.TEXTURE_WRAP_S, i.CLAMP_TO_EDGE),
-              i.texParameteri(i.TEXTURE_2D, i.TEXTURE_WRAP_T, i.CLAMP_TO_EDGE),
-              i.texParameteri(i.TEXTURE_2D, i.TEXTURE_MIN_FILTER, i.NEAREST),
-              i.texParameteri(i.TEXTURE_2D, i.TEXTURE_MAG_FILTER, i.NEAREST));
-            const x = i.createFramebuffer();
-            i.bindFramebuffer(i.FRAMEBUFFER, x);
-            const E = i.COLOR_ATTACHMENT0;
-            i.framebufferTexture2D(i.FRAMEBUFFER, E, i.TEXTURE_2D, p, 0);
-            for (let e = 0; e < o; e++) {
-              if ((i.useProgram(n), h("tileloaded", e, o - 1), c !== j))
-                return (
-                  i.deleteFramebuffer(x),
+          const { startDate: t, endDate: r, iterations: o, emit: h } = e;
+          i.useProgram(n);
+          const c = (j = Date.now()),
+            f = Math.floor((r.getTime() - t.getTime()) / o),
+            d = i.getUniform(n, w),
+            m = X,
+            _ = G,
+            p = i.createTexture();
+          (i.activeTexture(i.TEXTURE2),
+            i.bindTexture(i.TEXTURE_2D, p),
+            i.texImage2D(
+              i.TEXTURE_2D,
+              0,
+              i.RGBA,
+              m,
+              _,
+              0,
+              i.RGBA,
+              i.UNSIGNED_BYTE,
+              null,
+            ),
+            i.texParameteri(i.TEXTURE_2D, i.TEXTURE_WRAP_S, i.CLAMP_TO_EDGE),
+            i.texParameteri(i.TEXTURE_2D, i.TEXTURE_WRAP_T, i.CLAMP_TO_EDGE),
+            i.texParameteri(i.TEXTURE_2D, i.TEXTURE_MIN_FILTER, i.NEAREST),
+            i.texParameteri(i.TEXTURE_2D, i.TEXTURE_MAG_FILTER, i.NEAREST));
+          const x = i.createFramebuffer();
+          i.bindFramebuffer(i.FRAMEBUFFER, x);
+          const E = i.COLOR_ATTACHMENT0;
+          i.framebufferTexture2D(i.FRAMEBUFFER, E, i.TEXTURE_2D, p, 0);
+          for (let e = 0; e < o; e++) {
+            if ((i.useProgram(n), h("tileloaded", e, o - 1), c !== j))
+              return (
+                i.deleteFramebuffer(x),
+                i.deleteTexture(p),
+                i.uniform4fv(w, d),
+                !0
+              );
+            await new Promise((r, h) => {
+              window.requestAnimationFrame(() => {
+                (i.useProgram(n),
+                  null !== H &&
+                    (i.activeTexture(i.TEXTURE0),
+                    i.bindTexture(i.TEXTURE_2D, H)),
+                  i.bindFramebuffer(i.FRAMEBUFFER, x));
+                const h = i.checkFramebufferStatus(i.FRAMEBUFFER);
+                h !== i.FRAMEBUFFER_COMPLETE &&
+                  console.error("Framebuffer is incomplete: " + h);
+                const { dec: c, Hi: d } = g(new Date(t.getTime() + f * e));
+                (i.uniform1f(R, c),
+                  i.uniform1f(M, d),
+                  i.uniform4fv(w, [1 / o, 0, 0, 1]),
+                  i.bindBuffer(i.ARRAY_BUFFER, a),
+                  i.enableVertexAttribArray(s),
+                  i.vertexAttribPointer(s, 2, i.FLOAT, !1, 0, 0),
+                  i.bindBuffer(i.ARRAY_BUFFER, u),
+                  i.enableVertexAttribArray(l),
+                  i.vertexAttribPointer(l, 2, i.FLOAT, !1, 0, 0),
+                  i.viewport(0, 0, m, _),
+                  i.enable(i.BLEND),
+                  i.blendFunc(i.ONE, i.ONE),
+                  i.drawArrays(i.TRIANGLE_STRIP, 0, 4),
+                  r());
+              });
+            });
+          }
+          return (
+            i.deleteFramebuffer(x),
+            await new Promise((t, e) => {
+              window.requestAnimationFrame(() => {
+                if ((i.useProgram(n), c !== j))
+                  return (i.deleteTexture(p), i.uniform4fv(w, d), void t(!0));
+                (i.activeTexture(i.TEXTURE2),
+                  i.bindTexture(i.TEXTURE_2D, p),
+                  i.uniform1i(U, 2),
+                  i.uniform1i(D, 1),
+                  W(),
+                  i.uniform1i(D, 0),
+                  i.uniform1i(U, 0),
                   i.deleteTexture(p),
                   i.uniform4fv(w, d),
-                  !0
-                );
-              await new Promise((r, h) => {
-                window.requestAnimationFrame(() => {
-                  (i.useProgram(n),
-                    null !== H &&
-                      (i.activeTexture(i.TEXTURE0),
-                      i.bindTexture(i.TEXTURE_2D, H)),
-                    i.bindFramebuffer(i.FRAMEBUFFER, x));
-                  const h = i.checkFramebufferStatus(i.FRAMEBUFFER);
-                  h !== i.FRAMEBUFFER_COMPLETE &&
-                    console.error("Framebuffer is incomplete: " + h);
-                  const { dec: c, Hi: d } = g(new Date(t.getTime() + f * e));
-                  (i.uniform1f(R, c),
-                    i.uniform1f(M, d),
-                    i.uniform4fv(w, [1 / o, 0, 0, 1]),
-                    i.bindBuffer(i.ARRAY_BUFFER, a),
-                    i.enableVertexAttribArray(s),
-                    i.vertexAttribPointer(s, 2, i.FLOAT, !1, 0, 0),
-                    i.bindBuffer(i.ARRAY_BUFFER, u),
-                    i.enableVertexAttribArray(l),
-                    i.vertexAttribPointer(l, 2, i.FLOAT, !1, 0, 0),
-                    i.viewport(0, 0, m, _),
-                    i.enable(i.BLEND),
-                    i.blendFunc(i.ONE, i.ONE),
-                    i.drawArrays(i.TRIANGLE_STRIP, 0, 4),
-                    r());
-                });
+                  t(!1));
               });
-            }
-            return (
-              i.deleteFramebuffer(x),
-              await new Promise((t, e) => {
-                window.requestAnimationFrame(() => {
-                  if ((i.useProgram(n), c !== j))
-                    return (i.deleteTexture(p), i.uniform4fv(w, d), void t(!0));
-                  (i.activeTexture(i.TEXTURE2),
-                    i.bindTexture(i.TEXTURE_2D, p),
-                    i.uniform1i(U, 2),
-                    i.uniform1i(D, 1),
-                    W(),
-                    i.uniform1i(D, 0),
-                    i.uniform1i(U, 0),
-                    i.deleteTexture(p),
-                    i.uniform4fv(w, d),
-                    t(!1));
-                });
-              })
-            );
-          },
+            })
+          );
+        },
         updateColor: (t) => {
           const { colorVec: e } = t;
           (i.useProgram(n),
@@ -3232,15 +3350,16 @@ class MapboxShadeMap extends ShadeMapBase {
     }
     return i;
   }
-  async isPositionInSun(e, r) {
+  async isPositionInSun(x: number, y: number): Promise<boolean> {
     const o = Object.create(null, {
       isPositionInSun: { get: () => super.isPositionInSun },
     });
-    const t = this._getHeightMapCoords(e, r);
-    return o.isPositionInSun.call(this, t.x, t.y);
+    const coords = this._getHeightMapCoords(x, y);
+    return o.isPositionInSun.call(this, coords.x, coords.y);
   }
-  async isPositionInShade(e, r) {
-    return !(await this.isPositionInSun(e, r));
+
+  async isPositionInShade(x: number, y: number): Promise<boolean> {
+    return !(await this.isPositionInSun(x, y));
   }
   _flush() {
     if (this._map) {
