@@ -44,13 +44,14 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
     "@rollup/pluginutils": "^5.3.0",
-    "@types/mapbox-gl": "^2.7.8",
+    "@types/mapbox-gl": "^3.4.0",
     "@types/node": "^24.6.2",
     "prettier": "^3.6.2",
     "rollup": "^4.52.3",
     "terser": "^5.44.0",
     "tslib": "^2.8.1",
     "tsup": "^8.5.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "mapbox-gl": "^3.10.0"
   }
 }

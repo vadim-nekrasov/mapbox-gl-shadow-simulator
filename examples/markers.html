@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <link
-      href="https://api.mapbox.com/mapbox-gl-js/v2.8.2/mapbox-gl.css"
+      href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css"
       rel="stylesheet"
     />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.2/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
     <script src="https://www.unpkg.com/suncalc@1.9.0/suncalc.js"></script>
     <script src="../dist/mapbox-gl-shadow-simulator.umd.min.js"></script>
     <style>
@@ -131,6 +131,10 @@
       let now = new Date(1633362188054);
       let shadeMap;
       map.on("load", () => {
+        console.log(
+          "[SHADEMAP_DEBUG]",
+          JSON.stringify({ phase: "map:load", version: mapboxgl.version }),
+        );
         shadeMap = new ShadeMap({
           apiKey:
             "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRwcGlvdHJvd3NraUBzaGFkZW1hcC5hcHAiLCJjcmVhdGVkIjoxNjYyNDkzMDY2Nzk0LCJpYXQiOjE2NjI0OTMwNjZ9.ovCrLTYsdKFTF6TW3DuODxCaAtGQ3qhcmqj3DWcol5g",
@@ -165,6 +169,14 @@
         }).addTo(map);
 
         shadeMap.on("tileloaded", (loadedTiles, totalTiles) => {
+          console.log(
+            "[SHADEMAP_DEBUG]",
+            JSON.stringify({
+              phase: "tileloaded",
+              loadedTiles,
+              totalTiles,
+            }),
+          );
           loaderEl.innerText = `Loading: ${(
             (loadedTiles / totalTiles) *
             100
@@ -172,13 +184,30 @@
         });
 
         shadeMap.on("idle", async () => {
-          console.log("idle");
+          console.log("[SHADEMAP_DEBUG]", JSON.stringify({ phase: "idle" }));
           const promises = markers.map((marker) => {
             const latlng = marker.getLngLat();
             const { x, y } = map.project(latlng);
+            console.log(
+              "[SHADEMAP_DEBUG]",
+              JSON.stringify({
+                phase: "idle:markerProject",
+                lat: latlng.lat,
+                lng: latlng.lng,
+                x,
+                y,
+              }),
+            );
             return shadeMap.isPositionInSun(x, y);
           });
           const results = await Promise.all(promises);
+          console.log(
+            "[SHADEMAP_DEBUG]",
+            JSON.stringify({
+              phase: "idle:results",
+              results,
+            }),
+          );
           markers.forEach((marker, i) => {
             const inTheSun = results[i] === true;
             const element = marker.getElement();
@@ -199,7 +228,7 @@
       const stop = document.getElementById("stop");
       const exposure = document.getElementById("exposure");
       const exposureGradientContainer = document.getElementById(
-        "exposure-gradient-container"
+        "exposure-gradient-container",
       );
       const exposureGradient = document.getElementById("exposure-gradient");
 
@@ -209,7 +238,7 @@
           now = new Date(now.getTime() + 3600000);
           shadeMap && shadeMap.setDate(now);
         },
-        false
+        false,
       );
 
       decrement.addEventListener(
@@ -218,7 +247,7 @@
           now = new Date(now.getTime() - 3600000);
           shadeMap && shadeMap.setDate(now);
         },
-        false
+        false,
       );
 
       play.addEventListener("click", () => {

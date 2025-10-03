@@ -1905,6 +1905,14 @@ class ShadeMapBase extends EventEmitter {
       (this.options.debug("_draw()"),
       this._canvas && this._compiledKernel && this._map)
     ) {
+      console.log(
+        "[SHADEMAP_DEBUG]",
+        JSON.stringify({
+          phase: "draw:start",
+          hasHeightMap: !!e,
+          skipRender: this.options.sunExposure.enabled,
+        }),
+      );
       if (
         (nt({
           kernel: this._compiledKernel,
@@ -1924,6 +1932,15 @@ class ShadeMapBase extends EventEmitter {
           endDate: e,
           iterations: r,
         } = this.options.sunExposure;
+        console.log(
+          "[SHADEMAP_DEBUG]",
+          JSON.stringify({
+            phase: "sunExposure",
+            startDate: t?.toISOString?.(),
+            endDate: e?.toISOString?.(),
+            iterations: r,
+          }),
+        );
         if (
           !0 ===
           (await ot(this._compiledKernel, {
@@ -1936,6 +1953,29 @@ class ShadeMapBase extends EventEmitter {
           return this;
       }
       this._bounds && this._repositionCanvas(this._bounds);
+
+      const debugPayload = {
+        phase: "initialFlush",
+        date: this.options.date?.toISOString?.(),
+        hasKernel: !!this._compiledKernel,
+        hasHeightMap: !!this._heightMap,
+        skipRender: this.options.sunExposure.enabled,
+      };
+      console.log("[SHADEMAP_DEBUG]", JSON.stringify(debugPayload));
+      window.requestAnimationFrame(() => {
+        const afterPayload = {
+          phase: "initialFlush:rafStart",
+          hasKernel: !!this._compiledKernel,
+          hasHeightMap: !!this._heightMap,
+          canvasSize: {
+            width: this._canvas?.width ?? null,
+            height: this._canvas?.height ?? null,
+          },
+        };
+        console.log("[SHADEMAP_DEBUG]", JSON.stringify(afterPayload));
+        rt(this._compiledKernel, { date: this.options.date });
+        this._flush();
+      });
     }
     return this;
   }
@@ -2781,10 +2821,28 @@ class MapboxShadeMap extends ShadeMapBase {
   addTo(map: MapboxMap): this {
     return (map.addLayer(this as any), this);
   }
-  onAdd(e) {
+  onAdd(e, gl?) {
     ((this._map = e),
-      (this._gl = (this._map as any).painter.context.gl),
+      (this._gl = gl ?? (this._map as any)?.painter?.context?.gl),
       (this._framebuffer = this._gl.createFramebuffer()));
+
+    // Auto-detect canvas size for Mapbox GL v3+
+    try {
+      const size = this.options.getSize?.();
+      if (
+        !this.options.getSize ||
+        !size ||
+        Number.isNaN(size.width) ||
+        Number.isNaN(size.height)
+      ) {
+        this.options.getSize = () => {
+          const container = this._map?.getContainer?.();
+          return container
+            ? { width: container.clientWidth, height: container.clientHeight }
+            : { width: 1024, height: 768 };
+        };
+      }
+    } catch {}
     ((this._compiledKernel = (function (e) {
       const { context: r, setRenderBuffer: o } = e,
         i = r,
@@ -3217,10 +3275,35 @@ class MapboxShadeMap extends ShadeMapBase {
     })({
       context: this._gl,
       setRenderBuffer: (t, r, o) => {
-        const i = e.getSource(this.canvasSourceId).texture;
-        (t.activeTexture(t.TEXTURE1),
-          i.bind(t.LINEAR, t.CLAMP_TO_EDGE),
-          (i.size = [r, o]),
+        // Ensure canvas matches renderbuffer size
+        if (this._canvas) {
+          this._canvas.width = r;
+          this._canvas.height = o;
+        }
+
+        const canvasSource: any = e.getSource(this.canvasSourceId);
+        const sourceTextureObj: any = canvasSource?.texture;
+        const glTexture: WebGLTexture | undefined =
+          sourceTextureObj?.texture ?? sourceTextureObj;
+
+        t.activeTexture(t.TEXTURE1);
+        console.log(
+          "[SHADEMAP_DEBUG]",
+          JSON.stringify({
+            phase: "setRenderBuffer",
+            width: r,
+            height: o,
+            hasCanvas: !!this._canvas,
+            hasTexture: !!glTexture,
+          }),
+        );
+        if (glTexture) {
+          t.bindTexture(t.TEXTURE_2D, glTexture);
+          // Texture parameters for proper sampling and wrapping
+          t.texParameteri(t.TEXTURE_2D, t.TEXTURE_WRAP_S, t.CLAMP_TO_EDGE);
+          t.texParameteri(t.TEXTURE_2D, t.TEXTURE_WRAP_T, t.CLAMP_TO_EDGE);
+          t.texParameteri(t.TEXTURE_2D, t.TEXTURE_MIN_FILTER, t.LINEAR);
+          t.texParameteri(t.TEXTURE_2D, t.TEXTURE_MAG_FILTER, t.LINEAR);
           t.texImage2D(
             t.TEXTURE_2D,
             0,
@@ -3231,17 +3314,21 @@ class MapboxShadeMap extends ShadeMapBase {
             t.RGBA,
             t.UNSIGNED_BYTE,
             null,
-          ),
-          t.bindFramebuffer(t.FRAMEBUFFER, this._framebuffer),
+          );
+        }
+
+        t.bindFramebuffer(t.FRAMEBUFFER, this._framebuffer);
+        if (glTexture) {
           t.framebufferTexture2D(
             t.FRAMEBUFFER,
             t.COLOR_ATTACHMENT0,
             t.TEXTURE_2D,
-            i.texture,
+            glTexture,
             0,
-          ),
-          t.enable(t.BLEND),
-          t.blendFunc(t.SRC_ALPHA, t.ONE_MINUS_SRC_ALPHA));
+          );
+        }
+        t.enable(t.BLEND);
+        t.blendFunc(t.SRC_ALPHA, t.ONE_MINUS_SRC_ALPHA);
       },
     })),
       (this._tileMerger = new TileMerger(this._gl)),
@@ -3336,17 +3423,19 @@ class MapboxShadeMap extends ShadeMapBase {
     const r = new Uint8Array(4);
     if (this._map && this._gl && this._framebuffer) {
       const o = this._gl,
-        i = (this._map.getSource(this.canvasSourceId) as any).texture;
+        iTexObj = (this._map.getSource(this.canvasSourceId) as any).texture;
+      const iTex = iTexObj?.texture ?? iTexObj;
       (o.activeTexture(o.TEXTURE1),
-        i.bind(o.LINEAR, o.CLAMP_TO_EDGE),
+        iTex && o.bindTexture(o.TEXTURE_2D, iTex),
         o.bindFramebuffer(o.FRAMEBUFFER, this._framebuffer),
-        o.framebufferTexture2D(
-          o.FRAMEBUFFER,
-          o.COLOR_ATTACHMENT0,
-          o.TEXTURE_2D,
-          i.texture,
-          0,
-        ),
+        iTex &&
+          o.framebufferTexture2D(
+            o.FRAMEBUFFER,
+            o.COLOR_ATTACHMENT0,
+            o.TEXTURE_2D,
+            iTex,
+            0,
+          ),
         this._gl.readPixels(
           t,
           e,
@@ -3363,17 +3452,19 @@ class MapboxShadeMap extends ShadeMapBase {
     const i = new Uint8Array(r * o * 4);
     if (this._map && this._gl && this._framebuffer) {
       const n = this._gl,
-        a = (this._map.getSource(this.canvasSourceId) as any).texture;
+        aTexObj = (this._map.getSource(this.canvasSourceId) as any).texture;
+      const aTex = aTexObj?.texture ?? aTexObj;
       (n.activeTexture(n.TEXTURE1),
-        a.bind(n.LINEAR, n.CLAMP_TO_EDGE),
+        aTex && n.bindTexture(n.TEXTURE_2D, aTex),
         n.bindFramebuffer(n.FRAMEBUFFER, this._framebuffer),
-        n.framebufferTexture2D(
-          n.FRAMEBUFFER,
-          n.COLOR_ATTACHMENT0,
-          n.TEXTURE_2D,
-          a.texture,
-          0,
-        ),
+        aTex &&
+          n.framebufferTexture2D(
+            n.FRAMEBUFFER,
+            n.COLOR_ATTACHMENT0,
+            n.TEXTURE_2D,
+            aTex,
+            0,
+          ),
         this._gl.readPixels(
           t,
           e,
@@ -3399,11 +3490,20 @@ class MapboxShadeMap extends ShadeMapBase {
   }
   _flush() {
     if (this._map) {
-      (this._map.getSource(this.canvasSourceId) as any).fire({
+      const src: any = this._map.getSource(this.canvasSourceId);
+      console.log(
+        "[SHADEMAP_DEBUG]",
+        JSON.stringify({
+          phase: "flush",
+          hasSource: !!src,
+        }),
+      );
+      src?.fire?.({
         type: "data",
         dataType: "source",
         sourceDataType: "content",
       });
+      this._map.triggerRepaint?.();
     }
     super._flush();
   }
