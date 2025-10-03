@@ -24,7 +24,7 @@ function e(t, e, r) {
 function r(t, e) {
     if (false === e)
         return t;
-    var r = Math.pow(10, void 0 === e ? 6 : e);
+    var r = Math.pow(10, void 0 === e ? 6 : (typeof e === 'number' ? e : 6));
     return Math.round(t * r) / r;
 }
 // ============================================
@@ -293,7 +293,7 @@ function h(t, e) {
             return !(!this._southWest || !this._northEast);
         },
     }));
-var c = (function (t) {
+var c = (function (t, ...args) {
     var e, r, o, i;
     for (r = 1, o = arguments.length; r < o; r++)
         for (e in (i = arguments[r]))
@@ -478,7 +478,8 @@ class EventEmitter {
         this.events = {};
     }
     on(eventName, callback) {
-        return ("object" != typeof this.events[eventName] && (this.events[eventName] = []),
+        return ("object" != typeof this.events[eventName] &&
+            (this.events[eventName] = []),
             this.events[eventName].push(callback),
             () => this.removeListener(eventName, callback));
     }
@@ -1199,7 +1200,8 @@ class ShadeMapBase extends EventEmitter {
                 getSize: () => ({ width: Number.NaN, height: Number.NaN }),
                 debug: (t) => { },
             }));
-        if (((this.options = Object.assign(this.options, options)), !this.options.apiKey))
+        if (((this.options = Object.assign(this.options, options)),
+            !this.options.apiKey))
             throw new Error("Could not load ShadeMap: apiKey missing");
         (fetch("https://shademap.app/sdk/load", {
             method: "POST",
@@ -2038,7 +2040,7 @@ class MapboxShadeMap extends ShadeMapBase {
                                     i.enable(i.BLEND),
                                     i.blendFunc(i.ONE, i.ONE),
                                     i.drawArrays(i.TRIANGLE_STRIP, 0, 4),
-                                    r());
+                                    r(void 0));
                             });
                         });
                     }

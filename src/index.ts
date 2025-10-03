@@ -87,7 +87,7 @@ export type EventCallback = (...args: any[]) => void;
  * Wraps a value within a range [min, max]
  * Used for wrapping longitude/latitude values
  */
-function e(t, e, r) {
+function e(t: number, e: [number, number], r?: boolean): number {
   var o = e[1],
     i = e[0],
     n = o - i;
@@ -99,9 +99,9 @@ function e(t, e, r) {
  * @param value - Number to format
  * @param precision - Number of decimal places (default: 6)
  */
-function r(t, e) {
+function r(t: number, e?: number | false): number {
   if (!1 === e) return t;
-  var r = Math.pow(10, void 0 === e ? 6 : e);
+  var r = Math.pow(10, void 0 === e ? 6 : typeof e === "number" ? e : 6);
   return Math.round(t * r) / r;
 }
 
@@ -113,11 +113,11 @@ function r(t, e) {
  * Point constructor - represents a 2D point with x,y coordinates
  * Used throughout for pixel coordinates and geometric calculations
  */
-function i(t, e, r) {
+function i(this: any, t: number, e: number, r?: boolean): void {
   ((this.x = r ? Math.round(t) : t), (this.y = r ? Math.round(e) : e));
 }
 
-function a(t, e, r) {
+function a(t: any, e?: number, r?: boolean): any {
   return t instanceof i
     ? t
     : Array.isArray(t)
@@ -128,20 +128,20 @@ function a(t, e, r) {
           ? new i(t.x, t.y)
           : new i(t, e, r);
 }
-function s(t, e) {
+function s(this: any, t?: any, e?: any): void {
   if (t)
     for (var r = e ? [t, e] : t, o = 0, i = r.length; o < i; o++)
       this.extend(r[o]);
 }
-function u(t, e) {
+function u(t?: any, e?: any): any {
   return !t || t instanceof s ? t : new s(t, e);
 }
-function l(t, e) {
+function l(this: any, t?: any, e?: any): void {
   if (t)
     for (var r = e ? [t, e] : t, o = 0, i = r.length; o < i; o++)
       this.extend(r[o]);
 }
-function h(t, e) {
+function h(t?: any, e?: any): any {
   return t instanceof l ? t : new l(t, e);
 }
 ((i.prototype = {
@@ -259,7 +259,7 @@ function h(t, e) {
       return (
         (t = "number" == typeof t[0] || t instanceof i ? a(t) : u(t)) instanceof
         s
-          ? ((e = t.min), (r = t.max))
+          ? ((e = (t as any).min), (r = (t as any).max))
           : (e = r = t),
         e.x >= this.min.x &&
           r.x <= this.max.x &&
@@ -314,7 +314,10 @@ function h(t, e) {
       if (t instanceof f) ((e = t), (r = t));
       else {
         if (!(t instanceof l)) return t ? this.extend(d(t) || h(t)) : this;
-        if (((e = t._southWest), (r = t._northEast), !e || !r)) return this;
+        if (
+          ((e = (t as any)._southWest), (r = (t as any)._northEast), !e || !r)
+        )
+          return this;
       }
       return (
         o || i
@@ -372,7 +375,7 @@ function h(t, e) {
         i = this._northEast;
       return (
         t instanceof l
-          ? ((e = t.getSouthWest()), (r = t.getNorthEast()))
+          ? ((e = (t as any).getSouthWest()), (r = (t as any).getNorthEast()))
           : (e = r = t),
         e.lat >= o.lat && r.lat <= i.lat && e.lng >= o.lng && r.lng <= i.lng
       );
@@ -417,7 +420,7 @@ function h(t, e) {
       return !(!this._southWest || !this._northEast);
     },
   }));
-var c = (function (t) {
+var c: any = (function (t, ...args: any[]) {
   var e, r, o, i;
   for (r = 1, o = arguments.length; r < o; r++)
     for (e in (i = arguments[r])) t[e] = i[e];
@@ -487,12 +490,12 @@ var c = (function (t) {
     },
   },
 );
-function f(t, e, r) {
+function f(this: any, t: number, e: number, r?: number): void {
   if (isNaN(t) || isNaN(e))
     throw new Error("Invalid LatLng object: (" + t + ", " + e + ")");
   ((this.lat = +t), (this.lng = +e), void 0 !== r && (this.alt = +r));
 }
-function d(t, e, r) {
+function d(t: any, e?: number, r?: number): any {
   return t instanceof f
     ? t
     : Array.isArray(t) && "object" != typeof t[0]
@@ -578,7 +581,7 @@ const m = 256,
       s * r
     );
   },
-  v = (t = new Date(), e) => {
+  v = (t: Date = new Date(), e?: string): number => {
     const r = new Date(t.toLocaleString("en-US", { timeZone: "UTC" })),
       o = new Date(t.toLocaleString("en-US", e ? { timeZone: e } : {}));
     return r.getTime() - o.getTime();
@@ -738,7 +741,7 @@ function b(t, e, r, o, i) {
   else for (n = r - o; n >= e; n -= o) a = Y(n, t[n], t[n + 1], a);
   return (a && z(a, a.next) && (Z(a), (a = a.next)), a);
 }
-function R(t, e) {
+function R(t: any, e?: any): any {
   if (!t) return t;
   e || (e = t);
   var r,
@@ -753,7 +756,7 @@ function R(t, e) {
   } while (r || o !== e);
   return e;
 }
-function M(t, e, r, o, i, n, a) {
+function M(t: any, e: any, r: any, o?: any, i?: any, n?: any, a?: any): any {
   if (t) {
     !a &&
       n &&
@@ -926,7 +929,7 @@ function F(t, e, r, o) {
   }
   return !0;
 }
-function L(t, e, r) {
+function L(t: any, e?: any, r?: any): any {
   var o = t;
   do {
     var i = o.prev,
@@ -945,7 +948,7 @@ function L(t, e, r) {
   } while (o !== t);
   return R(o);
 }
-function U(t, e, r, o, i, n) {
+function U(t: any, e?: any, r?: any, o?: any, i?: any, n?: any): any {
   var a = t;
   do {
     for (var s = a.next.next; s !== a.prev; ) {
@@ -1600,9 +1603,11 @@ class ShadeMapBase extends EventEmitter {
   protected _map?: MapboxMap;
   protected _heightMap?: any;
   protected _compiledKernel?: any;
-  protected _reset: () => void;
-  protected _draw: () => void;
-  protected _flush: () => void;
+  protected _gl?: WebGL2RenderingContext | WebGLRenderingContext;
+  protected _bounds?: any;
+  protected _buildingRasterizer?: BuildingRasterizer;
+  protected _tileMerger?: any;
+  protected _canopyMerger?: any;
 
   constructor(options: ShadeMapOptions) {
     (super(),
@@ -1848,7 +1853,7 @@ class ShadeMapBase extends EventEmitter {
                   t(!0);
                 });
           });
-          const r = this._map.style._sourceCaches["other:composite"]
+          const r = (this._map as any).style._sourceCaches["other:composite"]
               .getVisibleCoordinates()
               .reverse(),
             o = r.reduce(
@@ -2173,7 +2178,24 @@ function ut(t) {
 // BUILDING RASTERIZER (WebGL)
 // ============================================
 class BuildingRasterizer {
-  constructor(t) {
+  gl: WebGL2RenderingContext | WebGLRenderingContext;
+  program: WebGLProgram;
+  positionAttributeLocation: number;
+  dsmAttributeLocation: number;
+  useDSMUniformLocation: WebGLUniformLocation | null;
+  isNegative: WebGLUniformLocation | null;
+  xyzUniformLocation: WebGLUniformLocation | null;
+  dimensionsUniformLocation: WebGLUniformLocation | null;
+  heightMapUniformLocation: WebGLUniformLocation | null;
+  canopyMapUniformLocation: WebGLUniformLocation | null;
+  centroidUniformLocation: WebGLUniformLocation | null;
+  colorUniformLocation: WebGLUniformLocation | null;
+  positionBuffer: WebGLBuffer | null;
+  dsmBuffer: WebGLBuffer | null;
+  indexBuffer: WebGLBuffer | null;
+  targetTexture: WebGLTexture | null;
+
+  constructor(t: WebGL2RenderingContext | WebGLRenderingContext) {
     ((this.gl = t),
       (this.program = ut({
         gl: t,
@@ -2477,7 +2499,20 @@ const ht = (t) => {
 // TILE MERGER (DEM Tiles)
 // ============================================
 class TileMerger {
-  constructor(t) {
+  gl: WebGL2RenderingContext | WebGLRenderingContext;
+  program: WebGLProgram;
+  texPositionAttributeLocation: number;
+  tilePositionAttributeLocation: number;
+  encodingUniformLocation: WebGLUniformLocation | null;
+  tileSizeUniformLocation: WebGLUniformLocation | null;
+  texPositionBuffer: WebGLBuffer | null;
+  tilePositionBuffer: WebGLBuffer | null;
+  tileTexture: WebGLTexture | null;
+  outputTexture: any;
+  inProgress: any[];
+  finished: number;
+
+  constructor(t: WebGL2RenderingContext | WebGLRenderingContext) {
     ((this.gl = t),
       (this.program = ut({
         vSrc: "\n      attribute vec4 a_tex_position;\n      attribute vec4 a_tile_position;\n      varying vec2 v_tex_pos;\n      void main() {\n        v_tex_pos = a_tex_position.xy;\n        gl_Position = a_tile_position;\n      }\n    ",
@@ -2671,12 +2706,13 @@ class TileMerger {
               t(null);
             }),
             (c.onerror = (e) => {
-              if (c.src !== c.originalSource) return l("new tiles requested");
+              if (c.src !== (c as any).originalSource)
+                return l("new tiles requested");
               t(null);
             }),
             (c.crossOrigin = s || null),
-            (c.src = r),
-            (c.originalSource = c.src));
+            (c.src = r as string),
+            ((c as any).originalSource = c.src));
         }).then(() => {
           (this.finished++, c(this.finished, this.inProgress.length));
         });
@@ -2688,7 +2724,7 @@ class TileMerger {
       }
       return (
         (this.inProgress = []),
-        (this.outputTexture.maxHeight = i),
+        ((this.outputTexture as any).maxHeight = i),
         o.deleteFramebuffer(_),
         this.outputTexture
       );
@@ -2747,7 +2783,7 @@ class MapboxShadeMap extends ShadeMapBase {
   }
   onAdd(e) {
     ((this._map = e),
-      (this._gl = this._map.painter.context.gl),
+      (this._gl = (this._map as any).painter.context.gl),
       (this._framebuffer = this._gl.createFramebuffer()));
     ((this._compiledKernel = (function (e) {
       const { context: r, setRenderBuffer: o } = e,
@@ -2982,7 +3018,7 @@ class MapboxShadeMap extends ShadeMapBase {
                   i.enable(i.BLEND),
                   i.blendFunc(i.ONE, i.ONE),
                   i.drawArrays(i.TRIANGLE_STRIP, 0, 4),
-                  r());
+                  r(void 0));
               });
             });
           }
@@ -3300,7 +3336,7 @@ class MapboxShadeMap extends ShadeMapBase {
     const r = new Uint8Array(4);
     if (this._map && this._gl && this._framebuffer) {
       const o = this._gl,
-        i = this._map.getSource(this.canvasSourceId).texture;
+        i = (this._map.getSource(this.canvasSourceId) as any).texture;
       (o.activeTexture(o.TEXTURE1),
         i.bind(o.LINEAR, o.CLAMP_TO_EDGE),
         o.bindFramebuffer(o.FRAMEBUFFER, this._framebuffer),
@@ -3327,7 +3363,7 @@ class MapboxShadeMap extends ShadeMapBase {
     const i = new Uint8Array(r * o * 4);
     if (this._map && this._gl && this._framebuffer) {
       const n = this._gl,
-        a = this._map.getSource(this.canvasSourceId).texture;
+        a = (this._map.getSource(this.canvasSourceId) as any).texture;
       (n.activeTexture(n.TEXTURE1),
         a.bind(n.LINEAR, n.CLAMP_TO_EDGE),
         n.bindFramebuffer(n.FRAMEBUFFER, this._framebuffer),
@@ -3363,9 +3399,11 @@ class MapboxShadeMap extends ShadeMapBase {
   }
   _flush() {
     if (this._map) {
-      this._map
-        .getSource(this.canvasSourceId)
-        .fire({ type: "data", dataType: "source", sourceDataType: "content" });
+      (this._map.getSource(this.canvasSourceId) as any).fire({
+        type: "data",
+        dataType: "source",
+        sourceDataType: "content",
+      });
     }
     super._flush();
   }
@@ -3383,7 +3421,7 @@ class MapboxShadeMap extends ShadeMapBase {
             [i.lng, i.lat],
             [n.lng, n.lat],
           ];
-        (e.setCoordinates(a), super._flush());
+        ((e as any).setCoordinates(a), super._flush());
       }
     }
     return this;

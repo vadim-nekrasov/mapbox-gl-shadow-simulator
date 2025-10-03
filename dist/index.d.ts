@@ -8,7 +8,7 @@
  *
  * For licensing visit: https://shademap.app/about/
  */
-import type { Map as MapboxMap, MapboxGeoJSONFeature } from 'mapbox-gl';
+import type { Map as MapboxMap, MapboxGeoJSONFeature } from "mapbox-gl";
 export interface TerrainSourceOptions {
     maxZoom: number;
     tileSize: number;
@@ -107,9 +107,11 @@ declare class ShadeMapBase extends EventEmitter {
     protected _map?: MapboxMap;
     protected _heightMap?: any;
     protected _compiledKernel?: any;
-    protected _reset: () => void;
-    protected _draw: () => void;
-    protected _flush: () => void;
+    protected _gl?: WebGL2RenderingContext | WebGLRenderingContext;
+    protected _bounds?: any;
+    protected _buildingRasterizer?: BuildingRasterizer;
+    protected _tileMerger?: any;
+    protected _canopyMerger?: any;
     constructor(options: ShadeMapOptions);
     onRemove(): this;
     setDate(date: Date): this;
@@ -155,6 +157,29 @@ declare class ShadeMapBase extends EventEmitter {
         r: number;
         g: number;
         b: number;
+    };
+}
+declare class BuildingRasterizer {
+    gl: WebGL2RenderingContext | WebGLRenderingContext;
+    program: WebGLProgram;
+    positionAttributeLocation: number;
+    dsmAttributeLocation: number;
+    useDSMUniformLocation: WebGLUniformLocation | null;
+    isNegative: WebGLUniformLocation | null;
+    xyzUniformLocation: WebGLUniformLocation | null;
+    dimensionsUniformLocation: WebGLUniformLocation | null;
+    heightMapUniformLocation: WebGLUniformLocation | null;
+    canopyMapUniformLocation: WebGLUniformLocation | null;
+    centroidUniformLocation: WebGLUniformLocation | null;
+    colorUniformLocation: WebGLUniformLocation | null;
+    positionBuffer: WebGLBuffer | null;
+    dsmBuffer: WebGLBuffer | null;
+    indexBuffer: WebGLBuffer | null;
+    targetTexture: WebGLTexture | null;
+    constructor(t: WebGL2RenderingContext | WebGLRenderingContext);
+    raster(t: any): {
+        maxHeight: number;
+        heightMapTex: WebGLTexture;
     };
 }
 declare class MapboxShadeMap extends ShadeMapBase {
