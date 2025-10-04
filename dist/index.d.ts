@@ -201,7 +201,7 @@ declare class MapboxShadeMap extends ShadeMapBase {
     constructor(options: ShadeMapOptions);
     render(gl: WebGLRenderingContext, matrix: number[]): void;
     addTo(map: MapboxMap): this;
-    onAdd(e: any): this;
+    onAdd(e: any, gl?: any): this;
     onRemove(): this;
     _getHeightMapCoords(t: any, e: any): any;
     getHoursOfSun(t: any, e: any): number;
